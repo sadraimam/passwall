@@ -150,7 +150,7 @@ echo -e "${GREEN} Xray : OK ${NC}"
 
  else
            
-rm -f amirhossein.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amirhossein.sh && chmod 777 amirhossein.sh && sh amirhossein.sh
+echo -e "${RED} Xray : NOT OK ${NC}"
 
 fi
 
@@ -220,10 +220,6 @@ sed -i 's/XTLS\/Xray-core/GFW-knocker\/Xray-core/g' /usr/lib/lua/luci/passwall2/
 uci set system.@system[0].zonename='Asia/Tehran'
 
 uci set system.@system[0].timezone='<+0330>-3:30'
-
-uci commit system
-
-uci set system.@system[0].hostname=By-AmirHossein
 
 uci commit system
 
