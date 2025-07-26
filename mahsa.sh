@@ -38,7 +38,7 @@ if [ "$SNNAP" == "SNAPSHOT" ]; then
 
 echo -e "${YELLOW} SNAPSHOT Version Detected ! ${NC}"
 
-rm -f mahsa-s.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/Passwall/refs/heads/main/mahsa-s.sh && chmod 777 mahsa-s.sh && sh mahsa-s.sh
+rm -f mahsa-s.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/mahsa-s.sh && chmod 777 mahsa-s.sh && sh mahsa-s.sh
 
 exit 1
 
@@ -95,15 +95,7 @@ opkg install kmod-tun
 
 >/etc/banner
 
-echo "    ___    __  ___________  __  ______  __________ ___________   __
-   /   |  /  |/  /  _/ __ \/ / / / __ \/ ___/ ___// ____/  _/ | / /
-  / /| | / /|_/ // // /_/ / /_/ / / / /\__ \\__ \ / __/  / //  |/ /
- / ___ |/ /  / // // _  _/ __  / /_/ /___/ /__/ / /____/ // /|  /
-/_/  |_/_/  /_/___/_/ |_/_/ /_/\____//____/____/_____/___/_/ |_/                                                                                                
-telegram : @AmirHosseinTSL" >> /etc/banner
-
 sleep 1
-
 
 RESULT5=`ls /etc/init.d/passwall2`
 
@@ -162,13 +154,13 @@ fi
 
 ####improve
 
-cd /tmp
+#cd /tmp
 
-wget -q https://amir3.space/iam.zip
+#wget -q https://amir3.space/iam.zip
 
-unzip -o iam.zip -d /
+#unzip -o iam.zip -d /
 
-cd
+#cd
 
 ########
 
@@ -246,8 +238,6 @@ uci commit
 rm /usr/bin/xray
 
 echo -e "${YELLOW}** Warning : To install Mahsa Core visit > Passwall2 > App Update > Xray Force Update ** ${ENDCOLOR}"
-
-echo -e "${MAGENTA} Made With Love By : AmirHossein ${ENDCOLOR}"
 
 rm passwall2x.sh
 
