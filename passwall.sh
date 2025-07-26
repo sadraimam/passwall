@@ -112,7 +112,7 @@ sleep 1
 
 cd /tmp
 
-wget -q https://github.com/sadraimam/passwall/raw/refs/heads/main/iam.zip
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
 
 unzip -o iam.zip -d /
 
