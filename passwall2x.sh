@@ -97,8 +97,6 @@ opkg install kmod-tun
 sleep 1
 opkg install ipset
 
->/etc/banner
-
 sleep 1
 
 
