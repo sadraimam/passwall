@@ -162,7 +162,7 @@ fi
 
 cd /tmp
 
-wget -q https://amir3.space/iam.zip
+wget -q https://github.com/sadraimam/passwall/raw/refs/heads/main/iam.zip
 
 unzip -o iam.zip -d /
 
@@ -224,17 +224,12 @@ uci commit passwall2
 
 uci commit system
 
-uci set system.@system[0].hostname=By-AmirHossein
-
-uci commit system
-
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
 my.irancell.ir'
 
 uci commit
 
 echo -e "${YELLOW}** Installation Completed ** ${ENDCOLOR}"
-echo -e "${MAGENTA} Made With Love By : AmirHossein ${ENDCOLOR}"
 
 rm passwall2x.sh
 
