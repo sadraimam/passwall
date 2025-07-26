@@ -107,13 +107,6 @@ echo -e "${GREEN}Done ! ${NC}"
 
 >/etc/banner
 
-echo "    ___    __  ___________  __  ______  __________ ___________   __
-   /   |  /  |/  /  _/ __ \/ / / / __ \/ ___/ ___// ____/  _/ | / /
-  / /| | / /|_/ // // /_/ / /_/ / / / /\__ \\__ \ / __/  / //  |/ /
- / ___ |/ /  / // // _  _/ __  / /_/ /___/ /__/ / /____/ // /|  /
-/_/  |_/_/  /_/___/_/ |_/_/ /_/\____//____/____/_____/___/_/ |_/                                                                                                
-telegram : @AmirHosseinTSL" >> /etc/banner
-
 sleep 1
 
 
@@ -167,13 +160,13 @@ fi
 
 ####improve
 
-cd /tmp
+#cd /tmp
 
-wget -q https://amir3.space/iam.zip
+#wget -q https://amir3.space/iam.zip
 
-unzip -o iam.zip -d /
+#unzip -o iam.zip -d /
 
-cd
+#cd
 
 ########
 
@@ -230,12 +223,7 @@ uci set system.@system[0].timezone='<+0330>-3:30'
 
 uci commit system
 
-
 uci commit wireless
-
-uci set system.@system[0].hostname=By-AmirHossein
-
-uci commit system
 
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
 my.irancell.ir'
@@ -243,7 +231,6 @@ my.irancell.ir'
 uci commit
 
 echo -e "${YELLOW}** Installation Completed ** ${ENDCOLOR}"
-echo -e "${MAGENTA} Made With Love By : AmirHossein ${ENDCOLOR}"
 
 /sbin/reload_config
 
