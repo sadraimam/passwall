@@ -150,7 +150,7 @@ echo -e "${GREEN} Xray : OK ${NC}"
 
  else
            
-echo -e "${RED} Xray : NOT OK ${NC}"
+rm -f amirhossein.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amirhossein.sh && chmod 777 amirhossein.sh && sh amirhossein.sh
 
 fi
 
