@@ -110,13 +110,13 @@ sleep 1
 
 ####improve
 
-#cd /tmp
+cd /tmp
 
-#wget -q https://amir3.space/iam.zip
+wget -q https://github.com/sadraimam/passwall/raw/refs/heads/main/iam.zip
 
-#unzip -o iam.zip -d /
+unzip -o iam.zip -d /
 
-#cd
+cd
 
 ########
 
@@ -223,10 +223,6 @@ fi
 uci set system.@system[0].zonename='Asia/Tehran'
 
 uci set system.@system[0].timezone='<+0330>-3:30'
-
-uci commit system
-
-uci set system.@system[0].hostname=By-AmirHossein
 
 uci commit system
 
