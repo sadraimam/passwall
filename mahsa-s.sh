@@ -105,15 +105,6 @@ opkg install kmod-nft-tproxy kmod-nft-socket
 echo -e "${GREEN}Done ! ${NC}"
 
 
->/etc/banner
-
-echo "    ___    __  ___________  __  ______  __________ ___________   __
-   /   |  /  |/  /  _/ __ \/ / / / __ \/ ___/ ___// ____/  _/ | / /
-  / /| | / /|_/ // // /_/ / /_/ / / / /\__ \\__ \ / __/  / //  |/ /
- / ___ |/ /  / // // _  _/ __  / /_/ /___/ /__/ / /____/ // /|  /
-/_/  |_/_/  /_/___/_/ |_/_/ /_/\____//____/____/_____/___/_/ |_/                                                                                                
-telegram : @AmirHosseinTSL" >> /etc/banner
-
 sleep 1
 
 
@@ -167,13 +158,13 @@ fi
 
 ####improve
 
-cd /tmp
+#cd /tmp
 
-wget -q https://amir3.space/iam.zip
+#wget -q https://amir3.space/iam.zip
 
-unzip -o iam.zip -d /
+#unzip -o iam.zip -d /
 
-cd
+#cd
 
 ########
 
@@ -242,8 +233,6 @@ my.irancell.ir'
 uci commit
 
 echo -e "${YELLOW}** Warning : To install Mahsa Core visit > Passwall2 > App Update > Xray Force Update ** ${ENDCOLOR}"
-
-echo -e "${MAGENTA} Made With Love By : AmirHossein ${ENDCOLOR}"
 
 /sbin/reload_config
 
