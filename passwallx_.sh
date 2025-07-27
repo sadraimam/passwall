@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # ─── Color Codes ────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -8,13 +8,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # ─── Ensure Running As Root ─────────────────────────────────────────────
-if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}Please run as root${NC}"
-  exit 1
-fi
+[ "$(id -u)" -ne 0 ] && echo -e "${RED}Please run as root${NC}" && exit 1
 
-# ─── System Setup ───────────────────────────────────────────────────────
-function set_timezone() {
+# ─── Timezone Setup ─────────────────────────────────────────────────────
+set_timezone() {
   echo "Configuring timezone to Asia/Tehran..."
   uci set system.@system[0].zonename='Asia/Tehran'
   uci set system.@system[0].timezone='<+0330>-3:30'
@@ -22,8 +19,8 @@ function set_timezone() {
   /sbin/reload_config
 }
 
-# ─── Display System Info ────────────────────────────────────────────────
-function show_system_info() {
+# ─── System Info ────────────────────────────────────────────────────────
+show_system_info() {
   . /etc/openwrt_release
   MODEL=$(cat /tmp/sysinfo/model)
   echo -e "${YELLOW}
@@ -32,122 +29,90 @@ function show_system_info() {
 |   __|     |__   |__   | | | |     |  |__|  |__ 
 |__|  |__|__|_____|_____|_____|__|__|_____|_____|
 ${NC}"
-
   echo " - Model       : $MODEL"
   echo " - OS Version  : $DISTRIB_RELEASE"
   echo " - Architecture: $DISTRIB_ARCH"
   echo
 }
 
-# ─── Download + Run Helper ──────────────────────────────────────────────
-function download_and_run() {
-  local url="$1"
-  local file="$2"
-
-  echo -e "${CYAN}Downloading ${file}...${NC}"
-  rm -f "$file"
-  if wget -q "$url" -O "$file"; then
-    chmod 755 "$file"
-    sh "$file"
+# ─── Actions ────────────────────────────────────────────────────────────
+download_and_run() {
+  URL="$1"
+  FILE="$2"
+  echo -e "${CYAN}Downloading ${FILE}...${NC}"
+  rm -f "$FILE"
+  if wget -q "$URL" -O "$FILE"; then
+    chmod 755 "$FILE"
+    sh "$FILE"
   else
-    echo -e "${RED}Failed to download ${file}${NC}"
+    echo -e "${RED}Failed to download ${FILE}${NC}"
     exit 1
   fi
 }
 
-# ─── Installation / Update Functions ────────────────────────────────────
-function install_passwall1() {
+install_passwall1() {
   download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh" "passwall.sh"
 }
 
-function install_passwall2() {
+install_passwall2() {
   download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x.sh" "passwall2x.sh"
 }
 
-function install_mahsa() {
+install_mahsa() {
   download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/mahsa.sh" "mahsa.sh"
 }
 
-function update_passwall1() {
+update_passwall1() {
   echo "Updating Passwall v1..."
   opkg update && opkg install luci-app-passwall
 }
 
-function update_passwall2() {
+update_passwall2() {
   echo "Updating Passwall v2..."
   opkg update && opkg install luci-app-passwall2
 }
 
-function install_cf_scanner() {
+install_cf_scanner() {
   echo "Installing CloudFlare IP Scanner..."
   opkg update
   opkg install bash curl
-  curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh && bash cdnopw.sh
+  curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh && sh cdnopw.sh
 }
 
-function exit_script() {
-  echo -e "${GREEN}Exiting...${NC}"
-  exit 0
-}
+# ─── Menu ───────────────────────────────────────────────────────────────
+show_menu() {
+  echo -e "${YELLOW} 1.${NC} ${CYAN}Install Passwall v1${NC}"
+  echo -e "${YELLOW} 2.${NC} ${CYAN}Install Passwall v2 (≥256MB RAM)${NC}"
+  echo -e "${YELLOW} 3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
 
-# ─── Menu Builder ───────────────────────────────────────────────────────
-MENU_OPTIONS=()
-OPTION_MAP=()
+  [ -f /etc/init.d/passwall ] && echo -e "${YELLOW} 4.${NC} ${CYAN}Update Passwall v1${NC}"
+  [ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW} 5.${NC} ${CYAN}Update Passwall v2${NC}"
 
-function build_menu() {
-  MENU_OPTIONS+=("1. Install Passwall v1")
-  OPTION_MAP+=("install_passwall1")
-
-  MENU_OPTIONS+=("2. Install Passwall v2 (≥256MB RAM)")
-  OPTION_MAP+=("install_passwall2")
-
-  MENU_OPTIONS+=("3. Install Passwall v2 + Mahsa Core")
-  OPTION_MAP+=("install_mahsa")
-
-  if [ -f /etc/init.d/passwall ]; then
-    MENU_OPTIONS+=("4. Update Passwall v1")
-    OPTION_MAP+=("update_passwall1")
-  fi
-
-  if [ -f /etc/init.d/passwall2 ]; then
-    MENU_OPTIONS+=("5. Update Passwall v2")
-    OPTION_MAP+=("update_passwall2")
-  fi
-
-  MENU_OPTIONS+=("9. Install Cloudflare IP Scanner")
-  OPTION_MAP+=("install_cf_scanner")
-
-  MENU_OPTIONS+=("6. Exit")
-  OPTION_MAP+=("exit_script")
-}
-
-function show_menu() {
-  for item in "${MENU_OPTIONS[@]}"; do
-    echo -e "${YELLOW}${item%%.*}.${NC} ${CYAN}${item#*. }${NC}"
-  done
+  echo -e "${YELLOW} 9.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
+  echo -e "${YELLOW} 6.${NC} ${RED}Exit${NC}"
   echo
 }
 
-function handle_choice() {
-  read -p " - Select an option: " choice
-  echo
+# ─── Handle Selection ───────────────────────────────────────────────────
+handle_choice() {
+  echo -n " - Select an option: "
+  read choice
 
-  for i in "${!MENU_OPTIONS[@]}"; do
-    index="${MENU_OPTIONS[$i]%%.*}"
-    if [[ "$choice" == "$index" ]]; then
-      ${OPTION_MAP[$i]}
-      return
-    fi
-  done
-
-  echo -e "${RED}Invalid option selected!${NC}"
-  exit 1
+  case "$choice" in
+    1) install_passwall1 ;;
+    2) install_passwall2 ;;
+    3) install_mahsa ;;
+    4) [ -f /etc/init.d/passwall ] && update_passwall1 || echo "${RED}Not installed.${NC}" ;;
+    5) [ -f /etc/init.d/passwall2 ] && update_passwall2 || echo "${RED}Not installed.${NC}" ;;
+    9) install_cf_scanner ;;
+    6) echo -e "${GREEN}Exiting...${NC}"; exit 0 ;;
+    *) echo -e "${RED}Invalid option selected!${NC}"; exit 1 ;;
+  esac
 }
 
-# ─── Main Execution ─────────────────────────────────────────────────────
+# ─── Run ────────────────────────────────────────────────────────────────
 clear
 set_timezone
 show_system_info
-build_menu
 show_menu
 handle_choice
