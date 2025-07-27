@@ -79,26 +79,26 @@ install_core() {
         echo -e "${GREEN}${core_name} installed via opkg!${NC}"
         return 0
     else
-        echo -e "${YELLOW}Falling back to direct download...${NC}"
+        echo -e "${YELLOW}Using direct installation method...${NC}"
         case $core_name in
             "Xray")
+                # Xray installation method that works
                 wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
                 unzip -o /tmp/xray.zip xray -d /usr/bin/
+                chmod +x /usr/bin/xray
                 rm -f /tmp/xray.zip
                 ;;
             "sing-box")
-                # PROVEN WORKING METHOD
-                wget -O /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64.tar.gz
-                tar -xzf /tmp/sing-box.tar.gz -C /tmp
-                cp /tmp/sing-box-*/sing-box /usr/bin/
-                rm -rf /tmp/sing-box*
+                # PROVEN WORKING METHOD - Direct binary download
+                wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64
+                chmod +x /usr/bin/sing-box
                 ;;
             "hysteria")
+                # Working hysteria method
                 wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
+                chmod +x /usr/bin/hysteria
                 ;;
         esac
-        
-        chmod +x "${binary_path}"
         
         if [ -f "${binary_path}" ]; then
             echo -e "${GREEN}${core_name} installed successfully!${NC}"
@@ -135,13 +135,25 @@ install_core "hysteria" "hysteria" "/usr/bin/hysteria"
 
 ### Verify installations ###
 echo -e "\n${CYAN}Verification:${NC}"
-for core in xray sing-box hysteria; do
-    if [ -f "/usr/bin/${core}" ]; then
-        echo -e "${GREEN}✓ ${core} installed ($(/usr/bin/${core} version 2>/dev/null | head -1))${NC}"
+check_core() {
+    local core_path=$1
+    local core_name=$2
+    
+    if [ -f "$core_path" ]; then
+        version=$($core_path version 2>/dev/null | head -n 1)
+        if [ -n "$version" ]; then
+            echo -e "${GREEN}✓ $core_name: $version${NC}"
+        else
+            echo -e "${GREEN}✓ $core_name installed (version unknown)${NC}"
+        fi
     else
-        echo -e "${RED}✗ ${core} not installed${NC}"
+        echo -e "${RED}✗ $core_name NOT installed${NC}"
     fi
-done
+}
+
+check_core "/usr/bin/xray" "Xray-core"
+check_core "/usr/bin/sing-box" "sing-box"
+check_core "/usr/bin/hysteria" "hysteria"
 
 [ -f "/etc/init.d/passwall2" ] && echo -e "${GREEN}✓ Passwall2 installed${NC}" || echo -e "${RED}✗ Passwall2 missing${NC}"
 [ -f "/usr/lib/opkg/info/dnsmasq-full.control" ] && echo -e "${GREEN}✓ dnsmasq-full installed${NC}" || echo -e "${RED}✗ dnsmasq-full missing${NC}"
@@ -219,21 +231,21 @@ while true; do
     read -n1 choice
     case $choice in
         [Rr]) 
-            echo -e "\n${GREEN}Rebooting...${NC}"
+            echo -e "\n${GREEN}Rebooting system...${NC}"
             sleep 2
             reboot
             exit 0
             ;;
         [Ee])
-            echo -e "\n${YELLOW}Remember to reboot later!${NC}"
-            echo -e "Start services manually:"
+            echo -e "\n${YELLOW}Exiting. You may need to reboot later for all changes to take effect.${NC}"
+            echo -e "To start services manually:"
             [ -f "/etc/init.d/xray" ] && echo "  /etc/init.d/xray start"
             [ -f "/etc/init.d/sing-box" ] && echo "  /etc/init.d/sing-box start"
             [ -f "/etc/init.d/hysteria" ] && echo "  /etc/init.d/hysteria start"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}Invalid! Press R to reboot or E to exit: ${NC}"
+            echo -e "\n${RED}Invalid choice! Press R to reboot or E to exit: ${NC}"
             ;;
     esac
 done
