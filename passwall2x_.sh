@@ -111,6 +111,28 @@ if [ "$RESULT_SINGBOX" == "/usr/bin/sing-box" ]; then
 else
     echo -e "${YELLOW} SING-BOX : NOT INSTALLED X ${NC}"
     sleep 2
+    echo -e "${YELLOW} Trying to install Sing-box from GitHub ... ${NC}"
+    sleep 2
+    # Determine architecture
+    case $(uname -m) in
+        x86_64) ARCH="amd64" ;;
+        aarch64) ARCH="arm64" ;;
+        armv7l) ARCH="armv7" ;;
+        *) ARCH="amd64" ;;
+    esac
+    
+    wget -O sing-box.tar.gz "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-$ARCH.tar.gz"
+    tar -xzf sing-box.tar.gz
+    cp sing-box-*/sing-box /usr/bin/
+    chmod +x /usr/bin/sing-box
+    rm -rf sing-box*
+    
+    # Verify installation
+    if [ -f "/usr/bin/sing-box" ]; then
+        echo -e "${GREEN} SING-BOX installed successfully! ${NC}"
+    else
+        echo -e "${RED} Failed to install SING-BOX! ${NC}"
+    fi
 fi
 echo -e "${YELLOW}Cleaning up after Sing-box installation...${NC}"
 rm -f /tmp/sing-box*
