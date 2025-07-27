@@ -36,17 +36,16 @@ echo ""
 echo -e "${YELLOW}1.${NC} ${CYAN}Install Passwall v1${NC}"
 echo -e "${YELLOW}2.${NC} ${CYAN}Install Passwall v2 - requires ≥256MB RAM${NC}"
 echo -e "${YELLOW}3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
-
 [ -f /etc/init.d/passwall ] && echo -e "${YELLOW}4.${NC} ${CYAN}Update Passwall v1${NC}"
 [ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW}5.${NC} ${CYAN}Update Passwall v2${NC}"
+echo -e "${YELLOW}6.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
 
 # Show uninstall only if any version is installed
 if [ -f /etc/init.d/passwall ] || [ -f /etc/init.d/passwall2 ]; then
-    echo -e "${YELLOW}8.${NC} ${RED}Uninstall all Passwall versions${NC}"
+    echo -e "${YELLOW}7.${NC} ${RED}Uninstall all Passwall versions${NC}"
 fi
 
-echo -e "${YELLOW}9.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
-echo -e "${YELLOW}6.${NC} ${CYAN}Exit${NC}"
+echo -e "${YELLOW}0.${NC} ${CYAN}Exit${NC}"
 echo ""
 
 # Prompt
@@ -111,17 +110,17 @@ case "$choice" in
             opkg install luci-app-passwall2
         } || echo -e "${RED}Passwall v2 not installed.${NC}"
         ;;
-    8)
-        uninstall_passwall
-        ;;
-    9)
+    6)
         echo -e "${GREEN}Installing Cloudflare IP Scanner...${NC}"
         opkg update
         opkg install bash curl
         curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh
         sh cdnopw.sh
         ;;
-    6)
+    7)
+        uninstall_passwall
+        ;;
+    0)
         echo -e "${GREEN}Goodbye.${NC}"
         exit 0
         ;;
