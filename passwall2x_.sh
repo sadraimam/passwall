@@ -12,6 +12,10 @@ echo "Running as root..."
 sleep 2
 clear
 
+# Create lock directory to prevent errors
+mkdir -p /var/lock
+touch /var/lock/opkg.lock
+
 uci set system.@system[0].zonename='Asia/Tehran'
 uci set network.wan.peerdns="0"
 uci set network.wan6.peerdns="0"
@@ -79,6 +83,10 @@ else
     exit 1
 fi
 
+echo -e "${YELLOW}Cleaning up space after installation...${NC}"
+rm -rf /tmp/opkg-lists/*
+rm -f /tmp/*.ipk /tmp/*.zip /tmp/*.tar.gz
+
 ### Install Xray-core ###
 opkg install xray-core
 RESULT=`ls /usr/bin/xray 2>/dev/null`
@@ -88,6 +96,9 @@ else
     echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
     sleep 2
 fi
+echo -e "${YELLOW}Cleaning up after Xray installation...${NC}"
+rm -f /tmp/xray*
+rm -f /tmp/Xray*
 
 ### Install Sing-box ###
 opkg install sing-box
@@ -99,6 +110,8 @@ else
     echo -e "${YELLOW} SING-BOX : NOT INSTALLED X ${NC}"
     sleep 2
 fi
+echo -e "${YELLOW}Cleaning up after Sing-box installation...${NC}"
+rm -f /tmp/sing-box*
 
 ### Install Hysteria ###
 opkg install hysteria
@@ -129,6 +142,8 @@ else
         echo -e "${RED} Failed to install HYSTERIA! ${NC}"
     fi
 fi
+echo -e "${YELLOW}Cleaning up after Hysteria installation...${NC}"
+rm -f /tmp/hysteria*
 
 ### Additional Configuration ###
 cd /tmp
