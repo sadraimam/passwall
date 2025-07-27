@@ -78,7 +78,7 @@ case "$choice" in
         auto_uninstall_if_needed
         echo -e "${GREEN}Installing Passwall v1...${NC}"
         rm -f passwall.sh
-        wget -q --show-progress https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh
+        wget -q https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh
         chmod +x passwall.sh
         sh passwall.sh
         ;;
@@ -86,15 +86,15 @@ case "$choice" in
         auto_uninstall_if_needed
         echo -e "${GREEN}Installing Passwall v2...${NC}"
         rm -f passwall2x.sh
-        wget -q --show-progress https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x_.sh
-        chmod +x passwall2x.sh
+        wget -q https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x_.sh
+        chmod +x passwall2x_.sh
         sh passwall2x.sh
         ;;
     3)
         auto_uninstall_if_needed
         echo -e "${GREEN}Installing Passwall v2 + Mahsa Core...${NC}"
         rm -f mahsa.sh
-        wget -q --show-progress https://raw.githubusercontent.com/sadraimam/passwall/main/mahsa.sh
+        wget -q https://raw.githubusercontent.com/sadraimam/passwall/main/mahsa.sh
         chmod +x mahsa.sh
         sh mahsa.sh
         ;;
