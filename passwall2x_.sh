@@ -65,73 +65,144 @@ opkg install dnsmasq-full
 opkg install wget-ssl unzip luci-app-passwall2
 opkg install kmod-nft-socket kmod-nft-tproxy ca-bundle kmod-inet-diag kernel kmod-netlink-diag kmod-tun ipset
 
-### Install cores ###
-install_core() {
-    local core_name=$1
-    local package_name=$2
-    local binary_path=$3
+### Core Installation Functions ###
+install_xray() {
+    echo -e "${YELLOW}Installing Xray...${NC}"
+    opkg install xray-core >/dev/null 2>&1
     
-    echo -e "${YELLOW}Installing ${core_name}...${NC}"
-    opkg install "${package_name}" >/dev/null 2>&1
-    sleep 2
-    
-    if [ -f "${binary_path}" ]; then
-        echo -e "${GREEN}${core_name} installed via opkg!${NC}"
-        return 0
+    if [ -f "/usr/bin/xray" ]; then
+        echo -e "${GREEN}Xray installed via opkg!${NC}"
     else
         echo -e "${YELLOW}Using direct installation method...${NC}"
-        case $core_name in
-            "Xray")
-                # Xray installation method that works
-                wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
-                unzip -o /tmp/xray.zip xray -d /usr/bin/
-                chmod +x /usr/bin/xray
-                rm -f /tmp/xray.zip
-                ;;
-            "sing-box")
-                # PROVEN WORKING METHOD - Direct binary download
-                wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64
-                chmod +x /usr/bin/sing-box
-                ;;
-            "hysteria")
-                # Working hysteria method
-                wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
-                chmod +x /usr/bin/hysteria
-                ;;
-        esac
+        wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
+        unzip -o /tmp/xray.zip xray -d /usr/bin/
+        chmod +x /usr/bin/xray
+        rm -f /tmp/xray.zip
         
-        if [ -f "${binary_path}" ]; then
-            echo -e "${GREEN}${core_name} installed successfully!${NC}"
-            
-            # Create service file if needed
-            if [ ! -f "/etc/init.d/${core_name}" ]; then
-                cat > "/etc/init.d/${core_name}" <<EOF
+        if [ -f "/usr/bin/xray" ]; then
+            echo -e "${GREEN}Xray installed successfully!${NC}"
+        else
+            echo -e "${RED}Failed to install Xray!${NC}"
+        fi
+    fi
+    
+    # Cleanup
+    rm -rf /tmp/xray* /tmp/Xray*
+    echo -e "${BLUE}Cleaned Xray installation files${NC}"
+}
+
+install_singbox() {
+    echo -e "${YELLOW}Installing sing-box...${NC}"
+    
+    # First try official OpenWrt package
+    opkg install sing-box >/dev/null 2>&1
+    
+    if [ -f "/usr/bin/sing-box" ]; then
+        echo -e "${GREEN}sing-box installed via opkg!${NC}"
+    else
+        echo -e "${YELLOW}Using GitHub release method...${NC}"
+        mkdir -p /tmp/singbox
+        cd /tmp/singbox
+        
+        # Get latest release URL
+        latest_url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
+        download_url=$(curl -s $latest_url | grep "browser_download_url.*linux-amd64.*tar.gz" | head -1 | cut -d '"' -f 4)
+        
+        if [ -z "$download_url" ]; then
+            echo -e "${RED}Failed to find sing-box download URL!${NC}"
+            return 1
+        fi
+        
+        # Download and install
+        wget -q --show-progress $download_url
+        archive_file=$(basename $download_url)
+        tar -xzf $archive_file
+        
+        # Find and copy binary
+        binary=$(find . -name sing-box -type f)
+        if [ -n "$binary" ]; then
+            cp $binary /usr/bin/
+            chmod +x /usr/bin/sing-box
+            echo -e "${GREEN}sing-box installed from GitHub!${NC}"
+        else
+            echo -e "${RED}Failed to find sing-box binary in archive!${NC}"
+        fi
+        
+        cd
+    fi
+    
+    # Create service file if needed
+    if [ ! -f "/etc/init.d/sing-box" ]; then
+        cat > "/etc/init.d/sing-box" <<EOF
 #!/bin/sh /etc/rc.common
 START=99
 USE_PROCD=1
 
 start_service() {
     procd_open_instance
-    procd_set_param command "${binary_path}"
+    procd_set_param command /usr/bin/sing-box
     procd_set_param respawn
     procd_close_instance
 }
 EOF
-                chmod +x "/etc/init.d/${core_name}"
-                /etc/init.d/${core_name} enable
-            fi
-            return 0
-        else
-            echo -e "${RED}Failed to install ${core_name}!${NC}"
-            return 1
-        fi
+        chmod +x "/etc/init.d/sing-box"
+        /etc/init.d/sing-box enable
+        echo -e "${GREEN}Created sing-box service${NC}"
     fi
+    
+    # Cleanup
+    rm -rf /tmp/singbox
+    echo -e "${BLUE}Cleaned sing-box installation files${NC}"
 }
 
-# Install all cores
-install_core "Xray" "xray-core" "/usr/bin/xray"
-install_core "sing-box" "sing-box" "/usr/bin/sing-box"
-install_core "hysteria" "hysteria" "/usr/bin/hysteria"
+install_hysteria() {
+    echo -e "${YELLOW}Installing hysteria...${NC}"
+    
+    # First try official OpenWrt package
+    opkg install hysteria >/dev/null 2>&1
+    
+    if [ -f "/usr/bin/hysteria" ]; then
+        echo -e "${GREEN}hysteria installed via opkg!${NC}"
+    else
+        echo -e "${YELLOW}Using direct download method...${NC}"
+        wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
+        chmod +x /usr/bin/hysteria
+        
+        if [ -f "/usr/bin/hysteria" ]; then
+            echo -e "${GREEN}hysteria installed successfully!${NC}"
+        else
+            echo -e "${RED}Failed to install hysteria!${NC}"
+        fi
+    fi
+    
+    # Create service file if needed
+    if [ ! -f "/etc/init.d/hysteria" ]; then
+        cat > "/etc/init.d/hysteria" <<EOF
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/hysteria
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+        chmod +x "/etc/init.d/hysteria"
+        /etc/init.d/hysteria enable
+        echo -e "${GREEN}Created hysteria service${NC}"
+    fi
+    
+    # Cleanup
+    rm -f /tmp/hysteria*
+    echo -e "${BLUE}Cleaned hysteria installation files${NC}"
+}
+
+### Install all cores with cleanup between each ###
+install_xray
+install_singbox
+install_hysteria
 
 ### Verify installations ###
 echo -e "\n${CYAN}Verification:${NC}"
@@ -146,8 +217,10 @@ check_core() {
         else
             echo -e "${GREEN}✓ $core_name installed (version unknown)${NC}"
         fi
+        return 0
     else
-        echo -e "${RED}✗ $core_name NOT installed${NC}"
+        echo -e "${RED}✗ $core_name installation failed${NC}"
+        return 1
     fi
 }
 
@@ -218,7 +291,7 @@ my.irancell.ir'
 uci commit
 
 echo -e "\n${GREEN}** Installation Complete **${NC}"
-rm -f passwall2x.sh passwallx.sh
+rm -f passwall2x.sh passwallx.sh iam.zip
 /sbin/reload_config
 
 # Reboot prompt
