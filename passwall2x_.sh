@@ -85,14 +85,33 @@ install_core() {
                 rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
                 ;;
             "sing-box")
-                wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64
+                # Fixed sing-box installation method
+                wget -O sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64.tar.gz
+                tar -xzf sing-box.tar.gz
+                cp sing-box-*/sing-box /usr/bin/
                 chmod +x /usr/bin/sing-box
+                rm -rf sing-box*
+                # Create service file
+                cat > /etc/init.d/sing-box <<EOF
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/sing-box
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+                chmod +x /etc/init.d/sing-box
+                /etc/init.d/sing-box enable
                 ;;
             "hysteria")
-                # Original working hysteria installation method
+                # Original working hysteria method
                 wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
                 chmod +x /usr/bin/hysteria
-                # Create basic service file
+                # Create service file
                 cat > /etc/init.d/hysteria <<EOF
 #!/bin/sh /etc/rc.common
 START=99
@@ -128,6 +147,9 @@ echo -e "\n${CYAN}Verifying installations...${NC}"
 check_installation() {
     if [ -f "$1" ]; then
         echo -e "${GREEN}✓ $2 installed successfully${NC}"
+        if [ -n "$3" ]; then
+            echo -e "   Version: $($1 $3 2>/dev/null | head -1)"
+        fi
         return 0
     else
         echo -e "${RED}✗ $2 installation failed${NC}"
@@ -135,9 +157,9 @@ check_installation() {
     fi
 }
 
-check_installation "/usr/bin/xray" "Xray-core"
-check_installation "/usr/bin/sing-box" "sing-box"
-check_installation "/usr/bin/hysteria" "hysteria"
+check_installation "/usr/bin/xray" "Xray-core" "version"
+check_installation "/usr/bin/sing-box" "sing-box" "version"
+check_installation "/usr/bin/hysteria" "hysteria" "version"
 check_installation "/etc/init.d/passwall2" "Passwall2"
 check_installation "/usr/lib/opkg/info/dnsmasq-full.control" "dnsmasq-full"
 
