@@ -45,200 +45,161 @@ fi
 ### Update Packages ###
 opkg update
 
-### Add Core Repositories with Public Keys ###
-echo -e "${YELLOW}Adding package repositories with public keys...${NC}"
+### Cleanup before installation ###
+echo -e "${YELLOW}Cleaning up space...${NC}"
+opkg clean
+rm -rf /tmp/opkg-lists/*
+rm -f /tmp/*.ipk /tmp/*.zip /tmp/*.tar.gz
 
-# Architecture detection
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64) OWRT_ARCH="amd64" ;;
-    aarch64) OWRT_ARCH="arm64" ;;
-    armv7l) OWRT_ARCH="arm_cortex-a7" ;;
-    *) OWRT_ARCH="$ARCH" ;;
-esac
+### Install essential tools ###
+echo -e "${YELLOW}Installing essential tools...${NC}"
+opkg install wget-ssl unzip
+opkg install libustream-openssl ca-bundle
 
-# Passwall repository
-echo -e "${CYAN}Adding Passwall repository...${NC}"
-wget -O passwall.pub https://master.dl.sourceforge.net/project/openwrt-passwall-build/passwall.pub
-opkg-key add passwall.pub
-
-cat > /etc/opkg/customfeeds.conf <<EOF
-src/gz passwall_base https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-21.02/$OWRT_ARCH/passwall_packages
-src/gz passwall_luci https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-21.02/$OWRT_ARCH/passwall_luci
-EOF
-
-# Sing-box repository
-echo -e "${CYAN}Adding sing-box repository...${NC}"
-wget -O sing-box.pub https://sing-box.vercel.app/openwrt.pub
-opkg-key add sing-box.pub
-echo "src/gz singbox https://sing-box.vercel.app/debian/pool/main/s/sing-box" >> /etc/opkg/customfeeds.conf
-
-# Hysteria repository
-echo -e "${CYAN}Adding hysteria repository...${NC}"
-wget -O hysteria.pub https://op.supes.top/packages/public.key
-opkg-key add hysteria.pub
-echo "src/gz hysteria https://op.supes.top/packages/$OWRT_ARCH" >> /etc/opkg/customfeeds.conf
-
-# Update package lists
-echo -e "${YELLOW}Updating package lists...${NC}"
-opkg update
-
-### Install basic packages ###
-echo -e "${YELLOW}Installing basic packages...${NC}"
-opkg remove dnsmasq
-opkg install dnsmasq-full
-opkg install wget-ssl unzip luci-app-passwall2
-opkg install kmod-nft-socket kmod-nft-tproxy ca-bundle kmod-inet-diag kernel kmod-netlink-diag kmod-tun ipset
-
-### Install cores using official packages ###
-install_core() {
-    local core_name=$1
-    local package_name=$2
-    
-    echo -e "${YELLOW}Installing $core_name...${NC}"
-    opkg install "$package_name"
-    
-    # Verify installation
-    if opkg list-installed | grep -q "$package_name"; then
-        echo -e "${GREEN}$core_name installed via opkg!${NC}"
+### Core Installation Functions ###
+install_xray() {
+    echo -e "${YELLOW}Installing Xray...${NC}"
+    if opkg install xray-core; then
+        echo -e "${GREEN}Xray installed via opkg!${NC}"
     else
-        echo -e "${RED}Failed to install $core_name via opkg!${NC}"
-        return 1
+        echo -e "${YELLOW}Using direct installation method...${NC}"
+        wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-arm64-v8a.zip
+        unzip -o /tmp/xray.zip xray -d /usr/bin/
+        chmod +x /usr/bin/xray
+        echo -e "${GREEN}Xray installed successfully!${NC}"
     fi
+    
+    # Cleanup
+    rm -f /tmp/xray.zip
 }
 
-# Install all cores
-install_core "Xray-core" "xray-core"
-install_core "sing-box" "sing-box"
-install_core "hysteria" "hysteria"
-
-### Fallback for failed installations ###
-install_fallback() {
-    local core_name=$1
-    local binary_name=$2
-    local repo_url=$3
-    local file_pattern=$4
+install_singbox() {
+    echo -e "${YELLOW}Installing sing-box...${NC}"
     
-    if ! command -v "$binary_name" &> /dev/null; then
-        echo -e "${YELLOW}Installing $core_name manually...${NC}"
-        
-        # Get latest release
-        latest_url=$(curl -s "$repo_url" | grep -oP 'https://github.com/[^/]+/[^/]+/releases/download/[^"]+' | head -1)
-        download_url=""
-        
-        # Find matching file
-        while read -r url; do
-            if [[ $url == *"$file_pattern"* ]]; then
-                download_url="$url"
-                break
-            fi
-        done < <(curl -s "$latest_url" | grep -oP 'href="\K[^"]+' | sed 's/^/https:\/\/github.com/')
-        
-        if [ -z "$download_url" ]; then
-            echo -e "${RED}Could not find $core_name download URL!${NC}"
-            return 1
-        fi
-        
-        # Download and install
-        echo -e "${CYAN}Downloading $core_name from $download_url${NC}"
-        wget -O /tmp/core_file "$download_url"
-        
-        # Extract if needed
-        if [[ "$download_url" == *.tar.gz ]]; then
-            tar -xzf /tmp/core_file -C /tmp
-            find /tmp -name "$binary_name" -exec cp {} /usr/bin/ \;
-        elif [[ "$download_url" == *.zip ]]; then
-            unzip /tmp/core_file -d /tmp
-            find /tmp -name "$binary_name" -exec cp {} /usr/bin/ \;
-        else
-            cp /tmp/core_file "/usr/bin/$binary_name"
-        fi
-        
-        chmod +x "/usr/bin/$binary_name"
-        rm -f /tmp/core_file
-    fi
-}
-
-# Fallback installations
-install_fallback "sing-box" "sing-box" \
-    "https://api.github.com/repos/SagerNet/sing-box/releases/latest" \
-    "linux-$OWRT_ARCH"
-
-install_fallback "hysteria" "hysteria" \
-    "https://api.github.com/repos/apernet/hysteria/releases/latest" \
-    "linux-$OWRT_ARCH"
-
-### Create service files ###
-create_service() {
-    local service_name=$1
-    local binary_path=$2
+    # Get architecture
+    case $(uname -m) in
+        x86_64) ARCH="amd64" ;;
+        aarch64) ARCH="arm64" ;;
+        armv7l) ARCH="armv7" ;;
+        *) ARCH="amd64" ;;
+    esac
     
-    if [ ! -f "/etc/init.d/$service_name" ]; then
-        echo -e "${YELLOW}Creating $service_name service...${NC}"
-        cat > "/etc/init.d/$service_name" <<EOF
+    # Direct download method
+    echo -e "${YELLOW}Downloading sing-box binary...${NC}"
+    wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-$ARCH
+    
+    if [ -f "/usr/bin/sing-box" ]; then
+        chmod +x /usr/bin/sing-box
+        echo -e "${GREEN}sing-box installed successfully!${NC}"
+        
+        # Create service file
+        cat > "/etc/init.d/sing-box" <<EOF
 #!/bin/sh /etc/rc.common
 START=99
 USE_PROCD=1
 
 start_service() {
     procd_open_instance
-    procd_set_param command "$binary_path"
+    procd_set_param command /usr/bin/sing-box
     procd_set_param respawn
     procd_close_instance
 }
 EOF
-        chmod +x "/etc/init.d/$service_name"
-        /etc/init.d/"$service_name" enable
+        chmod +x "/etc/init.d/sing-box"
+        /etc/init.d/sing-box enable
+        echo -e "${GREEN}Created sing-box service${NC}"
+    else
+        echo -e "${RED}Failed to install sing-box!${NC}"
     fi
 }
 
-create_service "xray" "/usr/bin/xray"
-create_service "sing-box" "/usr/bin/sing-box"
-create_service "hysteria" "/usr/bin/hysteria"
+install_hysteria() {
+    echo -e "${YELLOW}Installing hysteria...${NC}"
+    
+    # Get architecture
+    case $(uname -m) in
+        x86_64) ARCH="amd64" ;;
+        aarch64) ARCH="arm64" ;;
+        armv7l) ARCH="armv7" ;;
+        *) ARCH="amd64" ;;
+    esac
+    
+    # Direct download method
+    echo -e "${YELLOW}Downloading hysteria binary...${NC}"
+    wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-$ARCH
+    
+    if [ -f "/usr/bin/hysteria" ]; then
+        chmod +x /usr/bin/hysteria
+        echo -e "${GREEN}hysteria installed successfully!${NC}"
+        
+        # Create service file
+        cat > "/etc/init.d/hysteria" <<EOF
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/hysteria
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+        chmod +x "/etc/init.d/hysteria"
+        /etc/init.d/hysteria enable
+        echo -e "${GREEN}Created hysteria service${NC}"
+    else
+        echo -e "${RED}Failed to install hysteria!${NC}"
+    fi
+}
+
+### Install basic packages ###
+echo -e "${YELLOW}Installing basic packages...${NC}"
+opkg install dnsmasq-full
+opkg install luci-app-passwall2
+opkg install kmod-nft-socket kmod-nft-tproxy kmod-inet-diag kmod-netlink-diag kmod-tun ipset
+
+### Install all cores ###
+install_xray
+install_singbox
+install_hysteria
 
 ### Verify installations ###
 echo -e "\n${CYAN}Verification:${NC}"
 
-verify_core() {
-    local core_name=$1
-    local binary_path=$2
+check_core() {
+    local core_path=$1
+    local core_name=$2
     
-    if command -v "$binary_path" &> /dev/null; then
-        version=$("$binary_path" version 2>/dev/null | head -n 1)
-        echo -e "${GREEN}✓ $core_name installed: ${version}${NC}"
-        
-        # Check if LuCI can detect it
-        if uci get passwall2.@global[0] &> /dev/null; then
-            echo -e "${GREEN}  LuCI integration verified${NC}"
-        else
-            echo -e "${YELLOW}  LuCI integration might need manual configuration${NC}"
-        fi
+    if [ -f "$core_path" ]; then
+        echo -e "${GREEN}✓ $core_name installed${NC}"
+        return 0
     else
         echo -e "${RED}✗ $core_name installation failed${NC}"
+        return 1
     fi
 }
 
-verify_core "Xray-core" "xray"
-verify_core "sing-box" "sing-box"
-verify_core "hysteria" "hysteria"
+check_core "/usr/bin/xray" "Xray-core"
+check_core "/usr/bin/sing-box" "sing-box"
+check_core "/usr/bin/hysteria" "hysteria"
 
 ### Additional configuration ###
-echo -e "\n${YELLOW}Applying Passwall2 configuration...${NC}"
+echo -e "\n${YELLOW}Applying final configuration...${NC}"
 
-# Ensure Passwall2 is properly configured
-if [ -f "/etc/config/passwall2" ]; then
-    uci set passwall2.@global_forwarding[0]=global_forwarding
-    uci set passwall2.@global_forwarding[0].tcp_no_redir_ports='disable'
-    uci set passwall2.@global_forwarding[0].udp_no_redir_ports='disable'
-    uci set passwall2.@global_forwarding[0].tcp_redir_ports='1:65535'
-    uci set passwall2.@global_forwarding[0].udp_redir_ports='1:65535'
-    uci set passwall2.@global[0].remote_dns='8.8.4.4'
-    
-    # Shunt rules for Iran
-    uci set passwall2.Direct=shunt_rules
-    uci set passwall2.Direct.network='tcp,udp'
-    uci set passwall2.Direct.remarks='IRAN'
-    uci set passwall2.Direct.ip_list='0.0.0.0/8
+# Passwall2 configuration
+uci set passwall2.@global_forwarding[0]=global_forwarding
+uci set passwall2.@global_forwarding[0].tcp_no_redir_ports='disable'
+uci set passwall2.@global_forwarding[0].udp_no_redir_ports='disable'
+uci set passwall2.@global_forwarding[0].tcp_redir_ports='1:65535'
+uci set passwall2.@global_forwarding[0].udp_redir_ports='1:65535'
+uci set passwall2.@global[0].remote_dns='8.8.4.4'
+
+# Shunt rules for Iran
+uci set passwall2.Direct=shunt_rules
+uci set passwall2.Direct.network='tcp,udp'
+uci set passwall2.Direct.remarks='IRAN'
+uci set passwall2.Direct.ip_list='0.0.0.0/8
 10.0.0.0/8
 100.64.0.0/10
 127.0.0.0/8
@@ -267,15 +228,11 @@ fc00::/7
 fe80::/10
 ff00::/8
 geoip:ir'
-    uci set passwall2.Direct.domain_list='regexp:^.+\.ir$
+uci set passwall2.Direct.domain_list='regexp:^.+\.ir$
 geosite:category-ir'
 
-    uci set passwall2.myshunt.Direct='_direct'
-    uci commit passwall2
-    echo -e "${GREEN}Passwall2 configuration updated${NC}"
-else
-    echo -e "${RED}Passwall2 configuration not found!${NC}"
-fi
+uci set passwall2.myshunt.Direct='_direct'
+uci commit passwall2
 
 # Final DNS configuration
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
@@ -285,18 +242,8 @@ uci commit
 echo -e "\n${GREEN}** Installation Complete **${NC}"
 
 # Cleanup
-rm -f passwall2x.sh passwallx.sh iam.zip
+rm -f /tmp/*.zip /tmp/*.tar.gz
 /sbin/reload_config
-
-# LuCI detection test
-echo -e "\n${YELLOW}LuCI Detection Test:${NC}"
-if [ -f "/usr/lib/lua/luci/controller/passwall2.lua" ]; then
-    echo -e "${GREEN}Passwall2 LuCI component is installed${NC}"
-else
-    echo -e "${RED}Passwall2 LuCI component missing!${NC}"
-    echo -e "${YELLOW}Reinstalling luci-app-passwall2...${NC}"
-    opkg install --force-reinstall luci-app-passwall2
-fi
 
 # Reboot prompt
 echo -e "\n${YELLOW}Choose action:${NC}"
