@@ -1,142 +1,118 @@
-#!/bin/sh
+#!/bin/bash
 
-# ─── Color Codes ────────────────────────────────────────────────────────
+# Define color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
+GRAY='\033[0;37m'
 NC='\033[0m' # No Color
 
-# ─── Ensure Running As Root ─────────────────────────────────────────────
-if [ "$(id -u)" != "0" ]; then
-  printf "%sPlease run as root%s\n" "$RED" "$NC"
-  exit 1
-fi
+echo -e "${YELLOW}Configuring timezone to Asia/Tehran...${NC}"
+sleep 1
 
-# ─── Timezone Setup ─────────────────────────────────────────────────────
-set_timezone() {
-  printf "Configuring timezone to Asia/Tehran...\n"
-  uci set system.@system[0].zonename='Asia/Tehran'
-  uci set system.@system[0].timezone='<+0330>-3:30'
-  uci commit
-  /sbin/reload_config
-}
+uci set system.@system[0].zonename='Asia/Tehran'
+uci set system.@system[0].timezone='<+0330>-3:30'
+uci commit
+/sbin/reload_config
 
-# ─── System Info ────────────────────────────────────────────────────────
-show_system_info() {
-  . /etc/openwrt_release
-  MODEL=$(cat /tmp/sysinfo/model 2>/dev/null || echo "Unknown")
-  printf "%s\n" "$YELLOW
- _____ _____ _____ _____ _ _ _ _____ __    __    
-|  _  |  _  |   __|   __| | | |  _  |  |  |  |   
-|   __|     |__   |__   | | | |     |  |__|  |__ 
-|__|  |__|__|_____|_____|_____|__|__|_____|_____|
-$NC"
-  printf " - Model       : %s\n" "$MODEL"
-  printf " - OS Version  : %s\n" "$DISTRIB_RELEASE"
-  printf " - Architecture: %s\n\n" "$DISTRIB_ARCH"
-}
+cp passwallx.sh /sbin/passwall 2>/dev/null
 
-# ─── Download + Run Helper ──────────────────────────────────────────────
-download_and_run() {
-  URL=$1
-  FILE=$2
-  printf "%sDownloading %s...%s\n" "$CYAN" "$FILE" "$NC"
-  rm -f "$FILE"
-  if wget -q "$URL" -O "$FILE"; then
-    chmod 755 "$FILE"
-    sh "$FILE"
-  else
-    printf "%sFailed to download %s%s\n" "$RED" "$FILE" "$NC"
-    exit 1
-  fi
-}
-
-install_passwall1() {
-  download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh" "passwall.sh"
-}
-
-install_passwall2() {
-  download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x.sh" "passwall2x.sh"
-}
-
-install_mahsa() {
-  download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/mahsa.sh" "mahsa.sh"
-}
-
-update_passwall1() {
-  printf "Updating Passwall v1...\n"
-  opkg update && opkg install luci-app-passwall
-}
-
-update_passwall2() {
-  printf "Updating Passwall v2...\n"
-  opkg update && opkg install luci-app-passwall2
-}
-
-install_cf_scanner() {
-  printf "Installing CloudFlare IP Scanner...\n"
-  opkg update
-  opkg install bash curl
-  curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh && sh cdnopw.sh
-}
-
-# ─── Menu ───────────────────────────────────────────────────────────────
-show_menu() {
-  printf "%s1.%s %sInstall Passwall v1%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-  printf "%s2.%s %sInstall Passwall v2 - requires ≥256MB RAM%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-  printf "%s3.%s %sInstall Passwall v2 + Mahsa Core%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-
-  if [ -f /etc/init.d/passwall ]; then
-    printf "%s4.%s %sUpdate Passwall v1%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-  fi
-
-  if [ -f /etc/init.d/passwall2 ]; then
-    printf "%s5.%s %sUpdate Passwall v2%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-  fi
-
-  printf "%s9.%s %sInstall Cloudflare IP Scanner%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
-  printf "%s6.%s %sExit%s\n\n" "$YELLOW" "$NC" "$RED" "$NC"
-}
-
-# ─── Handle Selection ───────────────────────────────────────────────────
-handle_choice() {
-  printf " - Select an option: "
-  read choice
-
-  case "$choice" in
-    1) install_passwall1 ;;
-    2) install_passwall2 ;;
-    3) install_mahsa ;;
-    4)
-      if [ -f /etc/init.d/passwall ]; then
-        update_passwall1
-      else
-        printf "%sPasswall v1 is not installed.%s\n" "$RED" "$NC"
-      fi
-      ;;
-    5)
-      if [ -f /etc/init.d/passwall2 ]; then
-        update_passwall2
-      else
-        printf "%sPasswall v2 is not installed.%s\n" "$RED" "$NC"
-      fi
-      ;;
-    9) install_cf_scanner ;;
-    6)
-      printf "%sExiting...%s\n" "$GREEN" "$NC"
-      exit 0
-      ;;
-    *)
-      printf "%sInvalid option selected!%s\n" "$RED" "$NC"
-      exit 1
-      ;;
-  esac
-}
-
-# ─── Main ───────────────────────────────────────────────────────────────
 clear
-set_timezone
-show_system_info
-show_menu
-handle_choice
+. /etc/openwrt_release
+
+# Banner
+echo -e "${YELLOW}
+ _____ _____ _____ _____ _ _ _ _____ __    __
+|  _  |  _  |   __|   __| | | |  _  |  |  |  |
+|   __|     |__   |__   | | | |     |  |__|  |__
+|__|  |__|__|_____|_____|_____|__|__|_____|_____|
+${NC}"
+
+# System Info
+EPOL=$(cat /tmp/sysinfo/model)
+echo -e "${GRAY} - Model       : ${NC}$EPOL"
+echo -e "${GRAY} - OS Version  : ${NC}$DISTRIB_RELEASE"
+echo -e "${GRAY} - Architecture: ${NC}$DISTRIB_ARCH"
+echo ""
+
+# Check installed versions
+has_passwall=false
+has_passwall2=false
+
+[ -f /etc/init.d/passwall ] && has_passwall=true
+[ -f /etc/init.d/passwall2 ] && has_passwall2=true
+
+# Menu options
+echo -e "${YELLOW}1.${NC} ${CYAN}Install Passwall v1${NC}"
+echo -e "${YELLOW}2.${NC} ${CYAN}Install Passwall v2 - requires ≥256MB RAM${NC}"
+echo -e "${YELLOW}3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
+$has_passwall && echo -e "${YELLOW}4.${NC} ${CYAN}Update Passwall v1${NC}"
+$has_passwall2 && echo -e "${YELLOW}5.${NC} ${CYAN}Update Passwall v2${NC}"
+echo -e "${YELLOW}9.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
+echo -e "${YELLOW}6.${NC} ${RED}Exit${NC}"
+echo ""
+
+# User Input
+read -p " - Select an option: " choice
+
+case $choice in
+1)
+    echo -e "${GREEN}Installing Passwall v1...${NC}"
+    sleep 1
+    rm -f passwall.sh
+    wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh
+    chmod +x passwall.sh
+    sh passwall.sh
+    ;;
+2)
+    echo -e "${GREEN}Installing Passwall v2...${NC}"
+    sleep 1
+    rm -f passwall2x.sh
+    wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x.sh
+    chmod +x passwall2x.sh
+    sh passwall2x.sh
+    ;;
+3)
+    echo -e "${GREEN}Installing Passwall v2 + Mahsa Core...${NC}"
+    sleep 1
+    rm -f mahsa.sh
+    wget https://raw.githubusercontent.com/sadraimam/passwall/main/mahsa.sh
+    chmod +x mahsa.sh
+    sh mahsa.sh
+    ;;
+4)
+    if $has_passwall; then
+        echo -e "${GREEN}Updating Passwall v1...${NC}"
+        opkg update
+        opkg install luci-app-passwall
+    else
+        echo -e "${RED}Passwall v1 is not installed.${NC}"
+    fi
+    ;;
+5)
+    if $has_passwall2; then
+        echo -e "${GREEN}Updating Passwall v2...${NC}"
+        opkg update
+        opkg install luci-app-passwall2
+    else
+        echo -e "${RED}Passwall v2 is not installed.${NC}"
+    fi
+    ;;
+9)
+    echo -e "${GREEN}Installing Cloudflare IP Scanner...${NC}"
+    opkg update
+    opkg install bash curl
+    curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh
+    bash cdnopw.sh
+    ;;
+6)
+    echo -e "${GREEN}Exiting...${NC}"
+    exit 0
+    ;;
+*)
+    echo -e "${RED}Invalid option selected!${NC}"
+    ;;
+esac
