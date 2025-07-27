@@ -216,7 +216,7 @@ echo -e "${GREEN} Xray OK ! ${NC}"
 
 echo -e "${YELLOW} Installing Xray On Temp Space ! ${NC}"
            
-rm -f amirhossein.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amirhossein.sh && chmod 777 amirhossein.sh && sh amirhossein.sh
+rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
 
 fi
 
@@ -249,8 +249,6 @@ my.irancell.ir'
 uci commit
 
 echo -e "${YELLOW}** Installation Completed ** ${ENDCOLOR}"
-echo -e "${MAGENTA} Made With Love By : AmirHossein ${ENDCOLOR}"
-
 
 rm passwallx.sh 2> /dev/null
 
