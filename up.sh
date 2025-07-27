@@ -22,23 +22,23 @@ cd /root/
 
 rm owo.sh
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/owo.sh
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/owo.sh
 
 chmod 777 owo.sh
 
 cd /etc/init.d/
 
-rm amir
+rm pw
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amir
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw
 
-chmod +x /etc/init.d/amir
+chmod +x /etc/init.d/pw
 
-/etc/init.d/amir enable
+/etc/init.d/pw enable
 
 cd /root/
 
 
-/etc/init.d/amir start
+/etc/init.d/pw start
 
 echo -e "${GREEN} Update Complated ! ${ENDCOLOR}"
