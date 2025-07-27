@@ -172,7 +172,7 @@ my.irancell.ir'
 uci commit
 
 echo -e "${GREEN}** Installation Completed **${NC}"
-rm -f passwall2x.sh passwallx.sh
+rm -f passwall2x_.sh passwallx.sh
 /sbin/reload_config
 
 # Add reboot/exit option
