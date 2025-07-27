@@ -19,7 +19,7 @@ logger -t check_internet "CORE is OK"
 
            
             sleep 3
-            service amir start
+            service pw start
 
 fi
 
