@@ -19,6 +19,11 @@ echo -e "${GREEN}Running as root...${NC}"
 sleep 2
 clear
 
+# Fix system directories
+echo -e "${YELLOW}Creating system directories...${NC}"
+mkdir -p /var/lock
+mkdir -p /tmp/opkg-lists
+
 # Basic system configuration
 echo -e "${YELLOW}Configuring system settings...${NC}"
 uci set system.@system[0].zonename='Asia/Tehran'
@@ -35,12 +40,11 @@ uci commit
 # Cleanup space
 echo -e "${YELLOW}Cleaning up space...${NC}"
 rm -rf /tmp/*
-opkg clean
 
 # Install absolute essentials
 echo -e "${YELLOW}Installing essential tools...${NC}"
 opkg update
-opkg install wget-ssl unzip ca-bundle
+opkg install wget unzip ca-bundle
 
 # Architecture detection
 ARCH=$(uname -m)
@@ -55,9 +59,8 @@ echo -e "${CYAN}Detected architecture: $BIN_ARCH${NC}"
 # Core installation functions
 install_xray() {
     echo -e "${YELLOW}Installing Xray-core...${NC}"
-    wget -O /usr/bin/xray "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-${BIN_ARCH}.zip"
-    unzip -o /usr/bin/xray -d /usr/bin/ xray
-    rm -f /usr/bin/xray.zip
+    wget -O /tmp/xray.zip "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-${BIN_ARCH}.zip"
+    unzip -j -o /tmp/xray.zip xray -d /usr/bin/
     chmod +x /usr/bin/xray
     echo -e "${GREEN}Xray installed successfully!${NC}"
     
@@ -79,9 +82,9 @@ EOF
 
 install_singbox() {
     echo -e "${YELLOW}Installing sing-box...${NC}"
-    wget -O /usr/bin/sing-box "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-${BIN_ARCH}.tar.gz"
-    tar -xzf /usr/bin/sing-box -C /usr/bin/ sing-box-*/sing-box --strip-components=1
-    rm -f /usr/bin/sing-box*.tar.gz
+    wget -O /tmp/singbox.tar.gz "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-${BIN_ARCH}.tar.gz"
+    tar -xzf /tmp/singbox.tar.gz -C /tmp
+    find /tmp -name sing-box -exec cp {} /usr/bin/ \;
     chmod +x /usr/bin/sing-box
     echo -e "${GREEN}sing-box installed successfully!${NC}"
     
@@ -131,15 +134,13 @@ install_passwall() {
     VERSION_ID=${VERSION_ID%.*}
     
     # Download Passwall2
-    wget -O passwall2.ipk "https://github.com/xiaorouji/openwrt-passwall/releases/latest/download/luci-app-passwall2_${VERSION_ID}_all.ipk"
-    wget -O passwall2_zh.ipk "https://github.com/xiaorouji/openwrt-passwall/releases/latest/download/luci-i18n-passwall2-zh-cn_${VERSION_ID}_all.ipk"
+    wget -O /tmp/passwall2.ipk "https://github.com/xiaorouji/openwrt-passwall/releases/latest/download/luci-app-passwall2_${VERSION_ID}_all.ipk"
     
     # Install
-    opkg install passwall2.ipk
-    opkg install passwall2_zh.ipk
+    opkg install /tmp/passwall2.ipk
     
     # Cleanup
-    rm -f passwall2*.ipk
+    rm -f /tmp/passwall2*.ipk
 }
 
 # Install cores
