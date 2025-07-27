@@ -168,7 +168,7 @@ else
 
 fi
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/owo.sh
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/owo.sh
 
 chmod 777 owo.sh
 
@@ -189,7 +189,7 @@ fi
 
 
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/up.sh
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/up.sh
 
 chmod 777 up.sh
 
@@ -209,7 +209,7 @@ else
 
 fi
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/Install-Xray-V2ray-On-Passwall-Openwrt/main/timer.sh
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/timer.sh
 
 chmod +x timer.sh
 
@@ -217,11 +217,11 @@ cd
 
 cd /sbin/
 
-if [[ -f amir ]]
+if [[ -f pw ]]
 
 then 
 
-  rm amir
+  rm pw
 
 else 
 
@@ -229,11 +229,11 @@ else
 
 fi
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/Install-Xray-V2ray-On-Passwall-Openwrt/main/amir2
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw2
 
-chmod 777 amir2
+chmod 777 pw2
 
-mv amir2 amir
+mv pw2 pw
 
 cd
 
@@ -245,11 +245,11 @@ sleep 1
 cd /etc/init.d/
 
 
-if [[ -f amir ]] 
+if [[ -f pw ]] 
 
 then 
 
-  rm amir
+  rm pw
 
 else 
 
@@ -258,11 +258,11 @@ else
 fi
 
 
-wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amir
+wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw
 
-chmod +x /etc/init.d/amir
+chmod +x /etc/init.d/pw
 
-/etc/init.d/amir enable
+/etc/init.d/pw enable
 
 cd /root/
 
@@ -273,7 +273,7 @@ echo -e "${GREEN} almost done ... ${ENDCOLOR}"
 
 cd /tmp
 
-wget -q https://amir3.space/iam.zip
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
 
 unzip -o iam.zip -d /
 
@@ -367,18 +367,7 @@ fi
 
 ##EndConfig
 
-/etc/init.d/amir start
-
-
-
->/etc/banner
-
-echo "    ___    __  ___________  __  ______  __________ ___________   __
-   /   |  /  |/  /  _/ __ \/ / / / __ \/ ___/ ___// ____/  _/ | / /
-  / /| | / /|_/ // // /_/ / /_/ / / / /\__ \\__ \ / __/  / //  |/ /
- / ___ |/ /  / // // _  _/ __  / /_/ /___/ /__/ / /____/ // /|  /
-/_/  |_/_/  /_/___/_/ |_/_/ /_/\____//____/____/_____/___/_/ |_/                                                                                                
-telegram : @AmirHosseinTSL" >> /etc/banner
+/etc/init.d/pw start
 
 sleep 1
 
@@ -397,10 +386,6 @@ uci commit system
 ##checkup
 
 cd
-
-uci set system.@system[0].hostname=By-AmirHossein
-
-uci commit system
 
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
 my.irancell.ir'
@@ -429,7 +414,7 @@ fi
 cd /etc/init.d/
 
 
-if [[ -f amir ]] 
+if [[ -f pw ]] 
 
 then 
 
@@ -443,10 +428,8 @@ fi
 
 cd
 
-echo -e "${GREEN} Made With Love By : AmirHossein ${ENDCOLOR}"
-
 sleep 3
 
 
-rm amirhossein.sh 2> /dev/null
+rm pw.sh 2> /dev/null
 
