@@ -116,3 +116,11 @@ case $choice in
     echo -e "${RED}Invalid option selected!${NC}"
     ;;
 esac
+}
+
+# ─── Main ───────────────────────────────────────────────────────────────
+clear
+set_timezone
+show_system_info
+show_menu
+handle_choice
