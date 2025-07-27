@@ -28,7 +28,7 @@ if [ "$RESULT" == "sing" ]; then
 
 cd /tmp
 echo "Downloading latest version of Sing-Box ..."
-wget -q https://amir3.space/sing.ipk
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/sing.ipk
 
 if [[ -f sing.ipk ]]
 
@@ -70,7 +70,7 @@ cd /root/
 
 cd /tmp
 
-wget -q https://amir3.space/iam.zip
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
 
 unzip -o iam.zip -d /
 
@@ -95,7 +95,7 @@ fi
 
 cd /tmp
 echo "Downloading latest version of Xray-core ..."
-wget -q https://amir3.space/panel.ipk
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/panel.ipk
 
 if [[ -f panel.ipk ]]
 
@@ -137,7 +137,7 @@ cd /root/
 
 cd /tmp
 
-wget -q https://amir3.space/iam.zip
+wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
 
 unzip -o iam.zip -d /
 
