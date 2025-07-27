@@ -30,7 +30,8 @@ function show_system_info() {
  _____ _____ _____ _____ _ _ _ _____ __    __    
 |  _  |  _  |   __|   __| | | |  _  |  |  |  |   
 |   __|     |__   |__   | | | |     |  |__|  |__ 
-|__|  |__|__|_____|_____|_____|__|__|_____|_____|${NC}"
+|__|  |__|__|_____|_____|_____|__|__|_____|_____|
+${NC}"
 
   echo " - Model       : $MODEL"
   echo " - OS Version  : $DISTRIB_RELEASE"
@@ -38,18 +39,7 @@ function show_system_info() {
   echo
 }
 
-# ─── Check Passwall Availability ────────────────────────────────────────
-function check_existing_passwall() {
-  if [ -f /etc/init.d/passwall ]; then
-    echo -e "${YELLOW} > 4.${NC} ${GREEN} Update Passwall v1${NC}"
-  fi
-
-  if [ -f /etc/init.d/passwall2 ]; then
-    echo -e "${YELLOW} > 5.${NC} ${GREEN} Update Passwall v2${NC}"
-  fi
-}
-
-# ─── Install Functions ──────────────────────────────────────────────────
+# ─── Download + Run Helper ──────────────────────────────────────────────
 function download_and_run() {
   local url="$1"
   local file="$2"
@@ -65,6 +55,7 @@ function download_and_run() {
   fi
 }
 
+# ─── Installation / Update Functions ────────────────────────────────────
 function install_passwall1() {
   download_and_run "https://raw.githubusercontent.com/sadraimam/passwall/main/passwall.sh" "passwall.sh"
 }
@@ -94,37 +85,69 @@ function install_cf_scanner() {
   curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh && bash cdnopw.sh
 }
 
-# ─── Menu ───────────────────────────────────────────────────────────────
+function exit_script() {
+  echo -e "${GREEN}Exiting...${NC}"
+  exit 0
+}
+
+# ─── Menu Builder ───────────────────────────────────────────────────────
+MENU_OPTIONS=()
+OPTION_MAP=()
+
+function build_menu() {
+  MENU_OPTIONS+=("1. Install Passwall v1")
+  OPTION_MAP+=("install_passwall1")
+
+  MENU_OPTIONS+=("2. Install Passwall v2 (≥256MB RAM)")
+  OPTION_MAP+=("install_passwall2")
+
+  MENU_OPTIONS+=("3. Install Passwall v2 + Mahsa Core")
+  OPTION_MAP+=("install_mahsa")
+
+  if [ -f /etc/init.d/passwall ]; then
+    MENU_OPTIONS+=("4. Update Passwall v1")
+    OPTION_MAP+=("update_passwall1")
+  fi
+
+  if [ -f /etc/init.d/passwall2 ]; then
+    MENU_OPTIONS+=("5. Update Passwall v2")
+    OPTION_MAP+=("update_passwall2")
+  fi
+
+  MENU_OPTIONS+=("9. Install Cloudflare IP Scanner")
+  OPTION_MAP+=("install_cf_scanner")
+
+  MENU_OPTIONS+=("6. Exit")
+  OPTION_MAP+=("exit_script")
+}
+
 function show_menu() {
-  echo -e "${YELLOW} 1.${NC} ${CYAN}Install Passwall v1${NC}"
-  echo -e "${YELLOW} 2.${NC} ${CYAN}Install Passwall v2 (≥256MB RAM)${NC}"
-  echo -e "${YELLOW} 3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
-  echo -e "${YELLOW} 4.${NC} ${CYAN}Update Passwall v1${NC}"
-  echo -e "${YELLOW} 5.${NC} ${CYAN}Update Passwall v2${NC}"
-  echo -e "${YELLOW} 9.${NC} ${YELLOW}Install Cloudflare IP Scanner${NC}"
-  echo -e "${YELLOW} 6.${NC} ${RED}Exit${NC}"
+  for item in "${MENU_OPTIONS[@]}"; do
+    echo -e "${YELLOW}${item%%.*}.${NC} ${CYAN}${item#*. }${NC}"
+  done
   echo
 }
 
 function handle_choice() {
   read -p " - Select an option: " choice
   echo
-  case "$choice" in
-    1) install_passwall1 ;;
-    2) install_passwall2 ;;
-    3) install_mahsa ;;
-    4) update_passwall1 ;;
-    5) update_passwall2 ;;
-    9) install_cf_scanner ;;
-    6) echo -e "${GREEN}Exiting...${NC}"; exit 0 ;;
-    *) echo -e "${RED}Invalid option selected!${NC}"; exit 1 ;;
-  esac
+
+  for i in "${!MENU_OPTIONS[@]}"; do
+    index="${MENU_OPTIONS[$i]%%.*}"
+    if [[ "$choice" == "$index" ]]; then
+      ${OPTION_MAP[$i]}
+      return
+    fi
+  done
+
+  echo -e "${RED}Invalid option selected!${NC}"
+  exit 1
 }
 
 # ─── Main Execution ─────────────────────────────────────────────────────
 clear
 set_timezone
 show_system_info
-check_existing_passwall
+build_menu
 show_menu
 handle_choice
