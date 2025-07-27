@@ -147,7 +147,7 @@ echo -e "${GREEN} XRAY : OK ! ${NC}"
 
  sleep 2
   
-rm -f amirhossein.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/mi4agigabit/main/amirhossein.sh && chmod 777 amirhossein.sh && sh amirhossein.sh
+rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
 
 fi
 
@@ -219,8 +219,6 @@ uci commit passwall2
 uci commit system
 
 sed -i 's/XTLS\/Xray-core/GFW-knocker\/Xray-core/g' /usr/lib/lua/luci/passwall2/com.lua
-
-uci set system.@system[0].hostname=By-AmirHossein
 
 uci commit system
 
