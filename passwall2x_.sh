@@ -192,10 +192,15 @@ echo -e "${GREEN}** Installation Completed **${NC}"
 rm -f passwall2x_.sh passwallx.sh
 /sbin/reload_config
 
-# Add reboot/exit option
+# Final reboot/exit option
+echo -e "\n${CYAN}Installation Summary:${NC}"
+[ -f "/usr/bin/xray" ] && echo -e "${GREEN}✓ Xray-core installed${NC}" || echo -e "${RED}✗ Xray-core missing${NC}"
+[ -f "/usr/bin/sing-box" ] && echo -e "${GREEN}✓ sing-box installed${NC}" || echo -e "${RED}✗ sing-box missing${NC}"
+[ -f "/usr/bin/hysteria" ] && echo -e "${GREEN}✓ hysteria installed${NC}" || echo -e "${RED}✗ hysteria missing${NC}"
+
 echo -e "\n${YELLOW}What would you like to do now?${NC}"
-echo -e "${BLUE}[R]${NC} Reboot the system"
-echo -e "${BLUE}[E]${NC} Exit without rebooting"
+echo -e "${BLUE}[R]${NC}eboot the system (recommended)"
+echo -e "${BLUE}[E]${NC}xit without rebooting"
 echo -n -e "${YELLOW}Your choice [R/E]: ${NC}"
 
 while true; do
@@ -203,11 +208,12 @@ while true; do
     case $choice in
         [Rr]) 
             echo -e "\n${GREEN}Rebooting the system...${NC}"
+            sleep 2
             reboot
             exit 0
             ;;
         [Ee])
-            echo -e "\n${GREEN}Exiting. You may need to reboot later for all changes to take effect.${NC}"
+            echo -e "\n${GREEN}Exiting. Remember to reboot later for all changes to take effect.${NC}"
             exit 0
             ;;
         *)
