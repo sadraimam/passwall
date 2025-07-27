@@ -40,8 +40,11 @@ echo -e "${YELLOW}3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
 [ -f /etc/init.d/passwall ] && echo -e "${YELLOW}4.${NC} ${CYAN}Update Passwall v1${NC}"
 [ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW}5.${NC} ${CYAN}Update Passwall v2${NC}"
 
-# 🔧 Always show uninstall option
-echo -e "${YELLOW}8.${NC} ${RED}Uninstall all Passwall versions${NC}"
+# Show uninstall only if any version is installed
+if [ -f /etc/init.d/passwall ] || [ -f /etc/init.d/passwall2 ]; then
+    echo -e "${YELLOW}8.${NC} ${RED}Uninstall all Passwall versions${NC}"
+fi
+
 echo -e "${YELLOW}9.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
 echo -e "${YELLOW}6.${NC} ${CYAN}Exit${NC}"
 echo ""
