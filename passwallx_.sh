@@ -6,6 +6,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 GRAY='\033[0;37m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Set timezone
@@ -38,7 +39,7 @@ echo -e "${YELLOW}2.${NC} ${CYAN}Install Passwall v2 - requires ≥256MB RAM${NC
 echo -e "${YELLOW}3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
 [ -f /etc/init.d/passwall ] && echo -e "${YELLOW}4.${NC} ${GREEN}Update Passwall v1${NC}"
 [ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW}5.${NC} ${GREEN}Update Passwall v2${NC}"
-echo -e "${YELLOW}6.${NC} ${GRAY}Install Cloudflare IP Scanner${NC}"
+echo -e "${YELLOW}6.${NC} ${BLUE}Install Cloudflare IP Scanner${NC}"
 
 # Show uninstall only if any version is installed
 if [ -f /etc/init.d/passwall ] || [ -f /etc/init.d/passwall2 ]; then
