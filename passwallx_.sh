@@ -85,10 +85,10 @@ case "$choice" in
     2)
         auto_uninstall_if_needed
         echo -e "${GREEN}Installing Passwall v2...${NC}"
-        rm -f passwall2x.sh
+        rm -f passwall2x_.sh
         wget -q https://raw.githubusercontent.com/sadraimam/passwall/main/passwall2x_.sh
         chmod +x passwall2x_.sh
-        sh passwall2x.sh
+        sh passwall2x_.sh
         ;;
     3)
         auto_uninstall_if_needed
