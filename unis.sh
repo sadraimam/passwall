@@ -12,11 +12,11 @@ rm up.sh
 
 rm timer.sh
 
-rm amirhossein.sh
+rm pw.sh
 
-rm /etc/init.d/amir
+rm /etc/init.d/pw
 
-rm /sbin/amir
+rm /sbin/pw
 
 cd /root/
 
