@@ -174,3 +174,27 @@ uci commit
 echo -e "${GREEN}** Installation Completed **${NC}"
 rm -f passwall2x.sh passwallx.sh
 /sbin/reload_config
+
+# Add reboot/exit option
+echo -e "\n${YELLOW}What would you like to do now?${NC}"
+echo -e "${BLUE}[R]${NC} Reboot the system"
+echo -e "${BLUE}[E]${NC} Exit without rebooting"
+echo -n -e "${YELLOW}Your choice [R/E]: ${NC}"
+
+while true; do
+    read -n1 choice
+    case $choice in
+        [Rr]) 
+            echo -e "\n${GREEN}Rebooting the system...${NC}"
+            reboot
+            exit 0
+            ;;
+        [Ee])
+            echo -e "\n${GREEN}Exiting. You may need to reboot later for all changes to take effect.${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "\n${RED}Invalid choice! Please press R to reboot or E to exit: ${NC}"
+            ;;
+    esac
+done
