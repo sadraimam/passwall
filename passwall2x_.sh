@@ -32,72 +32,64 @@ uci commit network
 uci commit
 /sbin/reload_config
 
-# Check for SNAPSHOT version
-SNNAP=$(grep -o SNAPSHOT /etc/openwrt_release | sed -n '1p')
-if [ "$SNNAP" == "SNAPSHOT" ]; then
-    echo -e "${YELLOW}SNAPSHOT Version Detected!${NC}"
-    rm -f passwalls.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwalls.sh && chmod 777 passwalls.sh && sh passwalls.sh
-    exit 1
-else
-    echo -e "${GREEN}Updating Packages...${NC}"
-fi
-
-### Update Packages ###
-opkg update
-
-### Cleanup before installation ###
+# Cleanup space
 echo -e "${YELLOW}Cleaning up space...${NC}"
+rm -rf /tmp/*
 opkg clean
-rm -rf /tmp/opkg-lists/*
-rm -f /tmp/*.ipk /tmp/*.zip /tmp/*.tar.gz
 
-### Install essential tools ###
+# Install absolute essentials
 echo -e "${YELLOW}Installing essential tools...${NC}"
-opkg install wget-ssl unzip
-opkg install libustream-openssl ca-bundle
+opkg update
+opkg install wget-ssl unzip ca-bundle
 
-### Core Installation Functions ###
+# Architecture detection
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64) BIN_ARCH="amd64" ;;
+    aarch64) BIN_ARCH="arm64" ;;
+    armv7l) BIN_ARCH="armv7" ;;
+    *) BIN_ARCH="amd64" ;;
+esac
+echo -e "${CYAN}Detected architecture: $BIN_ARCH${NC}"
+
+# Core installation functions
 install_xray() {
-    echo -e "${YELLOW}Installing Xray...${NC}"
-    if opkg install xray-core; then
-        echo -e "${GREEN}Xray installed via opkg!${NC}"
-    else
-        echo -e "${YELLOW}Using direct installation method...${NC}"
-        wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-arm64-v8a.zip
-        unzip -o /tmp/xray.zip xray -d /usr/bin/
-        chmod +x /usr/bin/xray
-        echo -e "${GREEN}Xray installed successfully!${NC}"
-    fi
+    echo -e "${YELLOW}Installing Xray-core...${NC}"
+    wget -O /usr/bin/xray "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-${BIN_ARCH}.zip"
+    unzip -o /usr/bin/xray -d /usr/bin/ xray
+    rm -f /usr/bin/xray.zip
+    chmod +x /usr/bin/xray
+    echo -e "${GREEN}Xray installed successfully!${NC}"
     
-    # Cleanup
-    rm -f /tmp/xray.zip
+    # Create service
+    cat > /etc/init.d/xray <<'EOF'
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+start_service() {
+    procd_open_instance
+    procd_set_param command /usr/bin/xray
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+    chmod +x /etc/init.d/xray
+    /etc/init.d/xray enable
 }
 
 install_singbox() {
     echo -e "${YELLOW}Installing sing-box...${NC}"
+    wget -O /usr/bin/sing-box "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-${BIN_ARCH}.tar.gz"
+    tar -xzf /usr/bin/sing-box -C /usr/bin/ sing-box-*/sing-box --strip-components=1
+    rm -f /usr/bin/sing-box*.tar.gz
+    chmod +x /usr/bin/sing-box
+    echo -e "${GREEN}sing-box installed successfully!${NC}"
     
-    # Get architecture
-    case $(uname -m) in
-        x86_64) ARCH="amd64" ;;
-        aarch64) ARCH="arm64" ;;
-        armv7l) ARCH="armv7" ;;
-        *) ARCH="amd64" ;;
-    esac
-    
-    # Direct download method
-    echo -e "${YELLOW}Downloading sing-box binary...${NC}"
-    wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-$ARCH
-    
-    if [ -f "/usr/bin/sing-box" ]; then
-        chmod +x /usr/bin/sing-box
-        echo -e "${GREEN}sing-box installed successfully!${NC}"
-        
-        # Create service file
-        cat > "/etc/init.d/sing-box" <<EOF
+    # Create service
+    cat > /etc/init.d/sing-box <<'EOF'
 #!/bin/sh /etc/rc.common
 START=99
 USE_PROCD=1
-
 start_service() {
     procd_open_instance
     procd_set_param command /usr/bin/sing-box
@@ -105,39 +97,21 @@ start_service() {
     procd_close_instance
 }
 EOF
-        chmod +x "/etc/init.d/sing-box"
-        /etc/init.d/sing-box enable
-        echo -e "${GREEN}Created sing-box service${NC}"
-    else
-        echo -e "${RED}Failed to install sing-box!${NC}"
-    fi
+    chmod +x /etc/init.d/sing-box
+    /etc/init.d/sing-box enable
 }
 
 install_hysteria() {
     echo -e "${YELLOW}Installing hysteria...${NC}"
+    wget -O /usr/bin/hysteria "https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-${BIN_ARCH}"
+    chmod +x /usr/bin/hysteria
+    echo -e "${GREEN}hysteria installed successfully!${NC}"
     
-    # Get architecture
-    case $(uname -m) in
-        x86_64) ARCH="amd64" ;;
-        aarch64) ARCH="arm64" ;;
-        armv7l) ARCH="armv7" ;;
-        *) ARCH="amd64" ;;
-    esac
-    
-    # Direct download method
-    echo -e "${YELLOW}Downloading hysteria binary...${NC}"
-    wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-$ARCH
-    
-    if [ -f "/usr/bin/hysteria" ]; then
-        chmod +x /usr/bin/hysteria
-        echo -e "${GREEN}hysteria installed successfully!${NC}"
-        
-        # Create service file
-        cat > "/etc/init.d/hysteria" <<EOF
+    # Create service
+    cat > /etc/init.d/hysteria <<'EOF'
 #!/bin/sh /etc/rc.common
 START=99
 USE_PROCD=1
-
 start_service() {
     procd_open_instance
     procd_set_param command /usr/bin/hysteria
@@ -145,26 +119,43 @@ start_service() {
     procd_close_instance
 }
 EOF
-        chmod +x "/etc/init.d/hysteria"
-        /etc/init.d/hysteria enable
-        echo -e "${GREEN}Created hysteria service${NC}"
-    else
-        echo -e "${RED}Failed to install hysteria!${NC}"
-    fi
+    chmod +x /etc/init.d/hysteria
+    /etc/init.d/hysteria enable
 }
 
-### Install basic packages ###
-echo -e "${YELLOW}Installing basic packages...${NC}"
-opkg install dnsmasq-full
-opkg install luci-app-passwall2
-opkg install kmod-nft-socket kmod-nft-tproxy kmod-inet-diag kmod-netlink-diag kmod-tun ipset
+install_passwall() {
+    echo -e "${YELLOW}Installing Passwall2...${NC}"
+    
+    # Get OpenWrt version
+    . /etc/os-release
+    VERSION_ID=${VERSION_ID%.*}
+    
+    # Download Passwall2
+    wget -O passwall2.ipk "https://github.com/xiaorouji/openwrt-passwall/releases/latest/download/luci-app-passwall2_${VERSION_ID}_all.ipk"
+    wget -O passwall2_zh.ipk "https://github.com/xiaorouji/openwrt-passwall/releases/latest/download/luci-i18n-passwall2-zh-cn_${VERSION_ID}_all.ipk"
+    
+    # Install
+    opkg install passwall2.ipk
+    opkg install passwall2_zh.ipk
+    
+    # Cleanup
+    rm -f passwall2*.ipk
+}
 
-### Install all cores ###
+# Install cores
 install_xray
 install_singbox
 install_hysteria
 
-### Verify installations ###
+# Install Passwall2
+install_passwall
+
+# Install dependencies
+echo -e "${YELLOW}Installing dependencies...${NC}"
+opkg install dnsmasq-full
+opkg install kmod-nft-socket kmod-nft-tproxy kmod-inet-diag kmod-netlink-diag kmod-tun ipset
+
+# Verify installations
 echo -e "\n${CYAN}Verification:${NC}"
 
 check_core() {
@@ -184,10 +175,8 @@ check_core "/usr/bin/xray" "Xray-core"
 check_core "/usr/bin/sing-box" "sing-box"
 check_core "/usr/bin/hysteria" "hysteria"
 
-### Additional configuration ###
-echo -e "\n${YELLOW}Applying final configuration...${NC}"
-
 # Passwall2 configuration
+echo -e "\n${YELLOW}Configuring Passwall2...${NC}"
 uci set passwall2.@global_forwarding[0]=global_forwarding
 uci set passwall2.@global_forwarding[0].tcp_no_redir_ports='disable'
 uci set passwall2.@global_forwarding[0].udp_no_redir_ports='disable'
@@ -195,7 +184,7 @@ uci set passwall2.@global_forwarding[0].tcp_redir_ports='1:65535'
 uci set passwall2.@global_forwarding[0].udp_redir_ports='1:65535'
 uci set passwall2.@global[0].remote_dns='8.8.4.4'
 
-# Shunt rules for Iran
+# Shunt rules
 uci set passwall2.Direct=shunt_rules
 uci set passwall2.Direct.network='tcp,udp'
 uci set passwall2.Direct.remarks='IRAN'
@@ -234,15 +223,12 @@ geosite:category-ir'
 uci set passwall2.myshunt.Direct='_direct'
 uci commit passwall2
 
-# Final DNS configuration
+# Final DNS
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
 my.irancell.ir'
 uci commit
 
 echo -e "\n${GREEN}** Installation Complete **${NC}"
-
-# Cleanup
-rm -f /tmp/*.zip /tmp/*.tar.gz
 /sbin/reload_config
 
 # Reboot prompt
@@ -261,15 +247,15 @@ while true; do
             exit 0
             ;;
         [Ee])
-            echo -e "\n${YELLOW}Exiting. You may need to reboot later for all changes to take effect.${NC}"
-            echo -e "To start services manually:"
-            [ -f "/etc/init.d/xray" ] && echo "  /etc/init.d/xray start"
-            [ -f "/etc/init.d/sing-box" ] && echo "  /etc/init.d/sing-box start"
-            [ -f "/etc/init.d/hysteria" ] && echo "  /etc/init.d/hysteria start"
+            echo -e "\n${YELLOW}Exiting. You may need to reboot later.${NC}"
+            echo -e "Start services:"
+            echo "  /etc/init.d/xray start"
+            echo "  /etc/init.d/sing-box start"
+            echo "  /etc/init.d/hysteria start"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}Invalid choice! Press R to reboot or E to exit: ${NC}"
+            echo -e "\n${RED}Invalid choice! Press R or E: ${NC}"
             ;;
     esac
 done
