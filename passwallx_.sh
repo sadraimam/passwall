@@ -16,7 +16,7 @@ uci set system.@system[0].timezone='<+0330>-3:30'
 uci commit
 /sbin/reload_config
 
-cp passwallx_.sh /sbin/passwall 2>/dev/null
+cp passwallx.sh /sbin/passwall 2>/dev/null
 clear
 
 . /etc/openwrt_release
