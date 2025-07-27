@@ -65,47 +65,64 @@ opkg install dnsmasq-full
 opkg install wget-ssl unzip luci-app-passwall2
 opkg install kmod-nft-socket kmod-nft-tproxy ca-bundle kmod-inet-diag kernel kmod-netlink-diag kmod-tun ipset
 
-### Install cores ###
+### Install cores with enhanced sing-box handling ###
 install_core() {
     local core_name=$1
     local package_name=$2
     local binary_path=$3
+    local github_url=$4
     
     echo -e "${YELLOW}Installing ${core_name}...${NC}"
-    opkg install "${package_name}"
+    opkg install "${package_name}" 2>/dev/null
     sleep 2
     
     if [ -f "${binary_path}" ]; then
-        echo -e "${GREEN}${core_name} installed successfully!${NC}"
+        echo -e "${GREEN}${core_name} installed successfully via opkg!${NC}"
     else
-        echo -e "${RED}Failed to install ${core_name}!${NC}"
-        echo -e "${YELLOW}Trying alternative installation method...${NC}"
+        echo -e "${YELLOW}Standard installation failed, trying GitHub release...${NC}"
+        mkdir -p /tmp/${core_name}
+        cd /tmp/${core_name}
+        
         case $core_name in
-            "Xray")
-                rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
-                ;;
             "sing-box")
-                wget -O /usr/bin/sing-box https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64
-                chmod +x /usr/bin/sing-box
+                latest_url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
                 ;;
             "hysteria")
-                wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
-                chmod +x /usr/bin/hysteria
+                latest_url="https://api.github.com/repos/apernet/hysteria/releases/latest"
                 ;;
         esac
         
-        if [ -f "${binary_path}" ]; then
-            echo -e "${GREEN}${core_name} installed via alternative method!${NC}"
-        else
-            echo -e "${RED}Could not install ${core_name}. Continuing...${NC}"
+        # Get latest release URL
+        download_url=$(curl -s $latest_url | grep "browser_download_url.*linux-amd64" | cut -d '"' -f 4)
+        wget -q --show-progress $download_url
+        archive_file=$(basename $download_url)
+        
+        # Extract and install
+        if [[ $archive_file == *.tar.gz ]]; then
+            tar -xzf $archive_file
+        elif [[ $archive_file == *.zip ]]; then
+            unzip $archive_file
         fi
+        
+        # Find binary in extracted files
+        binary=$(find . -name ${core_name} -type f)
+        if [ -n "$binary" ]; then
+            cp $binary /usr/bin/
+            chmod +x ${binary_path}
+            echo -e "${GREEN}${core_name} installed from GitHub release!${NC}"
+        else
+            echo -e "${RED}Failed to install ${core_name}! Manual installation required.${NC}"
+        fi
+        
+        cd
+        rm -rf /tmp/${core_name}
     fi
 }
 
-# Install all cores
-install_core "Xray" "xray-core" "/usr/bin/xray"
-install_core "sing-box" "sing-box" "/usr/bin/sing-box"
-install_core "hysteria" "hysteria" "/usr/bin/hysteria"
+# Install all cores with GitHub fallback
+install_core "Xray" "xray-core" "/usr/bin/xray" ""
+install_core "sing-box" "sing-box" "/usr/bin/sing-box" "https://github.com/SagerNet/sing-box"
+install_core "hysteria" "hysteria" "/usr/bin/hysteria" "https://github.com/apernet/hysteria"
 
 ### Verify installations ###
 echo -e "${YELLOW}Verifying installations...${NC}"
