@@ -72,67 +72,58 @@ install_core() {
     local binary_path=$3
     
     echo -e "${YELLOW}Installing ${core_name}...${NC}"
-    opkg install "${package_name}"
+    opkg install "${package_name}" >/dev/null 2>&1
     sleep 2
     
     if [ -f "${binary_path}" ]; then
-        echo -e "${GREEN}${core_name} installed successfully!${NC}"
+        echo -e "${GREEN}${core_name} installed via opkg!${NC}"
+        return 0
     else
-        echo -e "${RED}Failed to install ${core_name}!${NC}"
-        echo -e "${YELLOW}Trying alternative installation method...${NC}"
+        echo -e "${YELLOW}Falling back to direct download...${NC}"
         case $core_name in
             "Xray")
-                rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
+                wget -O /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
+                unzip -o /tmp/xray.zip xray -d /usr/bin/
+                rm -f /tmp/xray.zip
                 ;;
             "sing-box")
-                # Fixed sing-box installation method
-                wget -O sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64.tar.gz
-                tar -xzf sing-box.tar.gz
-                cp sing-box-*/sing-box /usr/bin/
-                chmod +x /usr/bin/sing-box
-                rm -rf sing-box*
-                # Create service file
-                cat > /etc/init.d/sing-box <<EOF
-#!/bin/sh /etc/rc.common
-START=99
-USE_PROCD=1
-
-start_service() {
-    procd_open_instance
-    procd_set_param command /usr/bin/sing-box
-    procd_set_param respawn
-    procd_close_instance
-}
-EOF
-                chmod +x /etc/init.d/sing-box
-                /etc/init.d/sing-box enable
+                # PROVEN WORKING METHOD
+                wget -O /tmp/sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-amd64.tar.gz
+                tar -xzf /tmp/sing-box.tar.gz -C /tmp
+                cp /tmp/sing-box-*/sing-box /usr/bin/
+                rm -rf /tmp/sing-box*
                 ;;
             "hysteria")
-                # Original working hysteria method
                 wget -O /usr/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
-                chmod +x /usr/bin/hysteria
-                # Create service file
-                cat > /etc/init.d/hysteria <<EOF
-#!/bin/sh /etc/rc.common
-START=99
-USE_PROCD=1
-
-start_service() {
-    procd_open_instance
-    procd_set_param command /usr/bin/hysteria
-    procd_set_param respawn
-    procd_close_instance
-}
-EOF
-                chmod +x /etc/init.d/hysteria
-                /etc/init.d/hysteria enable
                 ;;
         esac
         
+        chmod +x "${binary_path}"
+        
         if [ -f "${binary_path}" ]; then
-            echo -e "${GREEN}${core_name} installed via alternative method!${NC}"
+            echo -e "${GREEN}${core_name} installed successfully!${NC}"
+            
+            # Create service file if needed
+            if [ ! -f "/etc/init.d/${core_name}" ]; then
+                cat > "/etc/init.d/${core_name}" <<EOF
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command "${binary_path}"
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+                chmod +x "/etc/init.d/${core_name}"
+                /etc/init.d/${core_name} enable
+            fi
+            return 0
         else
-            echo -e "${RED}Could not install ${core_name}. Continuing...${NC}"
+            echo -e "${RED}Failed to install ${core_name}!${NC}"
+            return 1
         fi
     fi
 }
@@ -143,28 +134,20 @@ install_core "sing-box" "sing-box" "/usr/bin/sing-box"
 install_core "hysteria" "hysteria" "/usr/bin/hysteria"
 
 ### Verify installations ###
-echo -e "\n${CYAN}Verifying installations...${NC}"
-check_installation() {
-    if [ -f "$1" ]; then
-        echo -e "${GREEN}✓ $2 installed successfully${NC}"
-        if [ -n "$3" ]; then
-            echo -e "   Version: $($1 $3 2>/dev/null | head -1)"
-        fi
-        return 0
+echo -e "\n${CYAN}Verification:${NC}"
+for core in xray sing-box hysteria; do
+    if [ -f "/usr/bin/${core}" ]; then
+        echo -e "${GREEN}✓ ${core} installed ($(/usr/bin/${core} version 2>/dev/null | head -1))${NC}"
     else
-        echo -e "${RED}✗ $2 installation failed${NC}"
-        return 1
+        echo -e "${RED}✗ ${core} not installed${NC}"
     fi
-}
+done
 
-check_installation "/usr/bin/xray" "Xray-core" "version"
-check_installation "/usr/bin/sing-box" "sing-box" "version"
-check_installation "/usr/bin/hysteria" "hysteria" "version"
-check_installation "/etc/init.d/passwall2" "Passwall2"
-check_installation "/usr/lib/opkg/info/dnsmasq-full.control" "dnsmasq-full"
+[ -f "/etc/init.d/passwall2" ] && echo -e "${GREEN}✓ Passwall2 installed${NC}" || echo -e "${RED}✗ Passwall2 missing${NC}"
+[ -f "/usr/lib/opkg/info/dnsmasq-full.control" ] && echo -e "${GREEN}✓ dnsmasq-full installed${NC}" || echo -e "${RED}✗ dnsmasq-full missing${NC}"
 
 ### Additional configuration ###
-echo -e "\n${YELLOW}Applying additional configuration...${NC}"
+echo -e "\n${YELLOW}Applying final configuration...${NC}"
 cd /tmp
 wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
 unzip -o iam.zip -d /
@@ -217,40 +200,40 @@ geosite:category-ir'
 uci set passwall2.myshunt.Direct='_direct'
 uci commit passwall2
 
-# Final commit and cleanup
+# Final commit
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
 my.irancell.ir'
 uci commit
 
-echo -e "\n${GREEN}** Installation Completed **${NC}"
+echo -e "\n${GREEN}** Installation Complete **${NC}"
 rm -f passwall2x.sh passwallx.sh
 /sbin/reload_config
 
-# Reboot/Exit option
-echo -e "\n${YELLOW}Choose next action:${NC}"
+# Reboot prompt
+echo -e "\n${YELLOW}Choose action:${NC}"
 echo -e "${GREEN}[R]${NC}eboot now (recommended)"
-echo -e "${BLUE}[E]${NC}xit without rebooting"
+echo -e "${BLUE}[E]${NC}xit without reboot"
 echo -n -e "${YELLOW}Your choice [R/E]: ${NC}"
 
 while true; do
     read -n1 choice
     case $choice in
         [Rr]) 
-            echo -e "\n${GREEN}Rebooting system...${NC}"
+            echo -e "\n${GREEN}Rebooting...${NC}"
             sleep 2
             reboot
             exit 0
             ;;
         [Ee])
-            echo -e "\n${YELLOW}Exiting. You may need to reboot later for changes to take effect.${NC}"
-            echo -e "You can manually start services with:"
-            [ -f "/etc/init.d/hysteria" ] && echo -e "  /etc/init.d/hysteria start"
-            [ -f "/etc/init.d/sing-box" ] && echo -e "  /etc/init.d/sing-box start"
-            [ -f "/etc/init.d/xray" ] && echo -e "  /etc/init.d/xray start"
+            echo -e "\n${YELLOW}Remember to reboot later!${NC}"
+            echo -e "Start services manually:"
+            [ -f "/etc/init.d/xray" ] && echo "  /etc/init.d/xray start"
+            [ -f "/etc/init.d/sing-box" ] && echo "  /etc/init.d/sing-box start"
+            [ -f "/etc/init.d/hysteria" ] && echo "  /etc/init.d/hysteria start"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}Invalid choice! Press R to reboot or E to exit: ${NC}"
+            echo -e "\n${RED}Invalid! Press R to reboot or E to exit: ${NC}"
             ;;
     esac
 done
