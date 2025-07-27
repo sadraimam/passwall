@@ -36,8 +36,8 @@ echo ""
 echo -e "${YELLOW}1.${NC} ${CYAN}Install Passwall v1${NC}"
 echo -e "${YELLOW}2.${NC} ${CYAN}Install Passwall v2 - requires ≥256MB RAM${NC}"
 echo -e "${YELLOW}3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
-[ -f /etc/init.d/passwall ] && echo -e "${GREEN}4.${NC} ${CYAN}Update Passwall v1${NC}"
-[ -f /etc/init.d/passwall2 ] && echo -e "${GREEN}5.${NC} ${CYAN}Update Passwall v2${NC}"
+[ -f /etc/init.d/passwall ] && echo -e "${YELLOW}4.${NC} ${GREEN}Update Passwall v1${NC}"
+[ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW}5.${NC} ${GREEN}Update Passwall v2${NC}"
 echo -e "${YELLOW}6.${NC} ${GRAY}Install Cloudflare IP Scanner${NC}"
 
 # Show uninstall only if any version is installed
