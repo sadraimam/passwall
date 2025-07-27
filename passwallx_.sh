@@ -8,11 +8,14 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # ─── Ensure Running As Root ─────────────────────────────────────────────
-[ "$(id -u)" -ne 0 ] && echo -e "${RED}Please run as root${NC}" && exit 1
+if [ "$(id -u)" != "0" ]; then
+  printf "%sPlease run as root%s\n" "$RED" "$NC"
+  exit 1
+fi
 
 # ─── Timezone Setup ─────────────────────────────────────────────────────
 set_timezone() {
-  echo "Configuring timezone to Asia/Tehran..."
+  printf "Configuring timezone to Asia/Tehran...\n"
   uci set system.@system[0].zonename='Asia/Tehran'
   uci set system.@system[0].timezone='<+0330>-3:30'
   uci commit
@@ -22,30 +25,29 @@ set_timezone() {
 # ─── System Info ────────────────────────────────────────────────────────
 show_system_info() {
   . /etc/openwrt_release
-  MODEL=$(cat /tmp/sysinfo/model)
-  echo -e "${YELLOW}
+  MODEL=$(cat /tmp/sysinfo/model 2>/dev/null || echo "Unknown")
+  printf "%s\n" "$YELLOW
  _____ _____ _____ _____ _ _ _ _____ __    __    
 |  _  |  _  |   __|   __| | | |  _  |  |  |  |   
 |   __|     |__   |__   | | | |     |  |__|  |__ 
 |__|  |__|__|_____|_____|_____|__|__|_____|_____|
-${NC}"
-  echo " - Model       : $MODEL"
-  echo " - OS Version  : $DISTRIB_RELEASE"
-  echo " - Architecture: $DISTRIB_ARCH"
-  echo
+$NC"
+  printf " - Model       : %s\n" "$MODEL"
+  printf " - OS Version  : %s\n" "$DISTRIB_RELEASE"
+  printf " - Architecture: %s\n\n" "$DISTRIB_ARCH"
 }
 
-# ─── Actions ────────────────────────────────────────────────────────────
+# ─── Download + Run Helper ──────────────────────────────────────────────
 download_and_run() {
-  URL="$1"
-  FILE="$2"
-  echo -e "${CYAN}Downloading ${FILE}...${NC}"
+  URL=$1
+  FILE=$2
+  printf "%sDownloading %s...%s\n" "$CYAN" "$FILE" "$NC"
   rm -f "$FILE"
   if wget -q "$URL" -O "$FILE"; then
     chmod 755 "$FILE"
     sh "$FILE"
   else
-    echo -e "${RED}Failed to download ${FILE}${NC}"
+    printf "%sFailed to download %s%s\n" "$RED" "$FILE" "$NC"
     exit 1
   fi
 }
@@ -63,17 +65,17 @@ install_mahsa() {
 }
 
 update_passwall1() {
-  echo "Updating Passwall v1..."
+  printf "Updating Passwall v1...\n"
   opkg update && opkg install luci-app-passwall
 }
 
 update_passwall2() {
-  echo "Updating Passwall v2..."
+  printf "Updating Passwall v2...\n"
   opkg update && opkg install luci-app-passwall2
 }
 
 install_cf_scanner() {
-  echo "Installing CloudFlare IP Scanner..."
+  printf "Installing CloudFlare IP Scanner...\n"
   opkg update
   opkg install bash curl
   curl -ksSL https://gitlab.com/rwkgyg/cdnopw/raw/main/cdnopw.sh -o cdnopw.sh && sh cdnopw.sh
@@ -81,36 +83,58 @@ install_cf_scanner() {
 
 # ─── Menu ───────────────────────────────────────────────────────────────
 show_menu() {
-  echo -e "${YELLOW} 1.${NC} ${CYAN}Install Passwall v1${NC}"
-  echo -e "${YELLOW} 2.${NC} ${CYAN}Install Passwall v2 (≥256MB RAM)${NC}"
-  echo -e "${YELLOW} 3.${NC} ${CYAN}Install Passwall v2 + Mahsa Core${NC}"
+  printf "%s1.%s %sInstall Passwall v1%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
+  printf "%s2.%s %sInstall Passwall v2 - requires ≥256MB RAM%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
+  printf "%s3.%s %sInstall Passwall v2 + Mahsa Core%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
 
-  [ -f /etc/init.d/passwall ] && echo -e "${YELLOW} 4.${NC} ${CYAN}Update Passwall v1${NC}"
-  [ -f /etc/init.d/passwall2 ] && echo -e "${YELLOW} 5.${NC} ${CYAN}Update Passwall v2${NC}"
+  if [ -f /etc/init.d/passwall ]; then
+    printf "%s4.%s %sUpdate Passwall v1%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
+  fi
 
-  echo -e "${YELLOW} 9.${NC} ${CYAN}Install Cloudflare IP Scanner${NC}"
-  echo -e "${YELLOW} 6.${NC} ${RED}Exit${NC}"
-  echo
+  if [ -f /etc/init.d/passwall2 ]; then
+    printf "%s5.%s %sUpdate Passwall v2%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
+  fi
+
+  printf "%s9.%s %sInstall Cloudflare IP Scanner%s\n" "$YELLOW" "$NC" "$CYAN" "$NC"
+  printf "%s6.%s %sExit%s\n\n" "$YELLOW" "$NC" "$RED" "$NC"
 }
 
 # ─── Handle Selection ───────────────────────────────────────────────────
 handle_choice() {
-  echo -n " - Select an option: "
+  printf " - Select an option: "
   read choice
 
   case "$choice" in
     1) install_passwall1 ;;
     2) install_passwall2 ;;
     3) install_mahsa ;;
-    4) [ -f /etc/init.d/passwall ] && update_passwall1 || echo "${RED}Not installed.${NC}" ;;
-    5) [ -f /etc/init.d/passwall2 ] && update_passwall2 || echo "${RED}Not installed.${NC}" ;;
+    4)
+      if [ -f /etc/init.d/passwall ]; then
+        update_passwall1
+      else
+        printf "%sPasswall v1 is not installed.%s\n" "$RED" "$NC"
+      fi
+      ;;
+    5)
+      if [ -f /etc/init.d/passwall2 ]; then
+        update_passwall2
+      else
+        printf "%sPasswall v2 is not installed.%s\n" "$RED" "$NC"
+      fi
+      ;;
     9) install_cf_scanner ;;
-    6) echo -e "${GREEN}Exiting...${NC}"; exit 0 ;;
-    *) echo -e "${RED}Invalid option selected!${NC}"; exit 1 ;;
+    6)
+      printf "%sExiting...%s\n" "$GREEN" "$NC"
+      exit 0
+      ;;
+    *)
+      printf "%sInvalid option selected!%s\n" "$RED" "$NC"
+      exit 1
+      ;;
   esac
 }
 
-# ─── Run ────────────────────────────────────────────────────────────────
+# ─── Main ───────────────────────────────────────────────────────────────
 clear
 set_timezone
 show_system_info
