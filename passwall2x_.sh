@@ -65,64 +65,99 @@ opkg install dnsmasq-full
 opkg install wget-ssl unzip luci-app-passwall2
 opkg install kmod-nft-socket kmod-nft-tproxy ca-bundle kmod-inet-diag kernel kmod-netlink-diag kmod-tun ipset
 
-### Install cores with enhanced sing-box handling ###
+### Enhanced Core Installation ###
 install_core() {
     local core_name=$1
     local package_name=$2
     local binary_path=$3
-    local github_url=$4
+    local github_repo=$4
     
     echo -e "${YELLOW}Installing ${core_name}...${NC}"
-    opkg install "${package_name}" 2>/dev/null
-    sleep 2
     
-    if [ -f "${binary_path}" ]; then
-        echo -e "${GREEN}${core_name} installed successfully via opkg!${NC}"
-    else
-        echo -e "${YELLOW}Standard installation failed, trying GitHub release...${NC}"
-        mkdir -p /tmp/${core_name}
-        cd /tmp/${core_name}
-        
-        case $core_name in
-            "sing-box")
-                latest_url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
-                ;;
-            "hysteria")
-                latest_url="https://api.github.com/repos/apernet/hysteria/releases/latest"
-                ;;
-        esac
-        
-        # Get latest release URL
-        download_url=$(curl -s $latest_url | grep "browser_download_url.*linux-amd64" | cut -d '"' -f 4)
-        wget -q --show-progress $download_url
-        archive_file=$(basename $download_url)
-        
-        # Extract and install
-        if [[ $archive_file == *.tar.gz ]]; then
-            tar -xzf $archive_file
-        elif [[ $archive_file == *.zip ]]; then
-            unzip $archive_file
+    # Try opkg installation first
+    if opkg install "${package_name}" 2>/dev/null; then
+        sleep 2
+        if [ -f "${binary_path}" ]; then
+            echo -e "${GREEN}${core_name} installed via opkg!${NC}"
+            return 0
         fi
-        
-        # Find binary in extracted files
-        binary=$(find . -name ${core_name} -type f)
-        if [ -n "$binary" ]; then
-            cp $binary /usr/bin/
-            chmod +x ${binary_path}
-            echo -e "${GREEN}${core_name} installed from GitHub release!${NC}"
-        else
-            echo -e "${RED}Failed to install ${core_name}! Manual installation required.${NC}"
-        fi
-        
-        cd
-        rm -rf /tmp/${core_name}
     fi
+    
+    # GitHub fallback with architecture detection
+    echo -e "${YELLOW}Trying GitHub release...${NC}"
+    temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+    
+    case $(uname -m) in
+        x86_64) arch="amd64";;
+        aarch64) arch="arm64";;
+        *) arch="$(uname -m)";;
+    esac
+    
+    # Special handling for each core
+    case $core_name in
+        "sing-box")
+            download_url=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url.*linux-$arch" | grep -v 'android' | head -1 | cut -d '"' -f 4)
+            ;;
+        "hysteria")
+            download_url=$(curl -s https://api.github.com/repos/apernet/hysteria/releases/latest | grep "browser_download_url.*linux-$arch" | head -1 | cut -d '"' -f 4)
+            ;;
+        "Xray")
+            download_url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$arch.zip"
+            ;;
+    esac
+
+    if wget -q --show-progress "$download_url"; then
+        archive_file=$(basename "$download_url")
+        
+        # Extract based on file type
+        if [[ $archive_file == *.tar.gz ]]; then
+            tar -xzf "$archive_file"
+        elif [[ $archive_file == *.zip ]]; then
+            unzip -q "$archive_file"
+        fi
+        
+        # Find binary (handle different extraction paths)
+        binary=$(find . -type f -name "${core_name,,}*" -o -name "${core_name}*" | grep -v '\.sig$' | head -1)
+        
+        if [ -n "$binary" ] && [ -f "$binary" ]; then
+            cp "$binary" "$binary_path"
+            chmod +x "$binary_path"
+            echo -e "${GREEN}${core_name} installed from GitHub!${NC}"
+            
+            # Create basic service file if needed
+            if [ ! -f "/etc/init.d/${core_name}" ]; then
+                echo -e "${YELLOW}Creating basic service file...${NC}"
+                cat > "/etc/init.d/${core_name}" <<EOF
+#!/bin/sh /etc/rc.common
+START=99
+USE_PROCD=1
+
+start_service() {
+    procd_open_instance
+    procd_set_param command "$binary_path"
+    procd_set_param respawn
+    procd_close_instance
+}
+EOF
+                chmod +x "/etc/init.d/${core_name}"
+                /etc/init.d/${core_name} enable
+            fi
+            return 0
+        fi
+    fi
+    
+    echo -e "${RED}Failed to install ${core_name}!${NC}"
+    echo -e "${YELLOW}Manual installation required for ${core_name}.${NC}"
+    cd
+    rm -rf "$temp_dir"
+    return 1
 }
 
-# Install all cores with GitHub fallback
-install_core "Xray" "xray-core" "/usr/bin/xray" ""
-install_core "sing-box" "sing-box" "/usr/bin/sing-box" "https://github.com/SagerNet/sing-box"
-install_core "hysteria" "hysteria" "/usr/bin/hysteria" "https://github.com/apernet/hysteria"
+# Install cores with proper fallback
+install_core "Xray" "xray-core" "/usr/bin/xray" "XTLS/Xray-core"
+install_core "sing-box" "sing-box" "/usr/bin/sing-box" "SagerNet/sing-box"
+install_core "hysteria" "hysteria" "/usr/bin/hysteria" "apernet/hysteria"
 
 ### Verify installations ###
 echo -e "${YELLOW}Verifying installations...${NC}"
@@ -192,32 +227,50 @@ echo -e "${GREEN}** Installation Completed **${NC}"
 rm -f passwall2x_.sh passwallx.sh
 /sbin/reload_config
 
-# Final reboot/exit option
-echo -e "\n${CYAN}Installation Summary:${NC}"
-[ -f "/usr/bin/xray" ] && echo -e "${GREEN}✓ Xray-core installed${NC}" || echo -e "${RED}✗ Xray-core missing${NC}"
-[ -f "/usr/bin/sing-box" ] && echo -e "${GREEN}✓ sing-box installed${NC}" || echo -e "${RED}✗ sing-box missing${NC}"
-[ -f "/usr/bin/hysteria" ] && echo -e "${GREEN}✓ hysteria installed${NC}" || echo -e "${RED}✗ hysteria missing${NC}"
+# Final verification with service check
+echo -e "\n${CYAN}Installation Verification:${NC}"
+check_service() {
+    if [ -f "$1" ]; then
+        echo -e "${GREEN}✓ $2 installed ($(basename $1) - v$($1 version 2>/dev/null | head -1))${NC}"
+    else
+        echo -e "${RED}✗ $2 not installed${NC}"
+    fi
+}
 
-echo -e "\n${YELLOW}What would you like to do now?${NC}"
-echo -e "${BLUE}[R]${NC}eboot the system (recommended)"
-echo -e "${BLUE}[E]${NC}xit without rebooting"
+check_service "/usr/bin/xray" "Xray-core"
+check_service "/usr/bin/sing-box" "sing-box"
+check_service "/usr/bin/hysteria" "hysteria"
+
+# Reboot/Exit option with service status
+echo -e "\n${YELLOW}Core Services Status:${NC}"
+[ -f "/etc/init.d/xray" ] && echo -e "Xray: $(/etc/init.d/xray enabled && echo -e "${GREEN}Enabled${NC}" || echo -e "${YELLOW}Disabled${NC}")"
+[ -f "/etc/init.d/sing-box" ] && echo -e "sing-box: $(/etc/init.d/sing-box enabled && echo -e "${GREEN}Enabled${NC}" || echo -e "${YELLOW}Disabled${NC}")"
+[ -f "/etc/init.d/hysteria" ] && echo -e "hysteria: $(/etc/init.d/hysteria enabled && echo -e "${GREEN}Enabled${NC}" || echo -e "${YELLOW}Disabled${NC}")"
+
+echo -e "\n${YELLOW}Choose action:${NC}"
+echo -e "${GREEN}[R]${NC}eboot now (recommended)"
+echo -e "${BLUE}[E]${NC}xit without reboot"
 echo -n -e "${YELLOW}Your choice [R/E]: ${NC}"
 
 while true; do
     read -n1 choice
     case $choice in
         [Rr]) 
-            echo -e "\n${GREEN}Rebooting the system...${NC}"
-            sleep 2
+            echo -e "\n${GREEN}Rebooting system...${NC}"
+            sleep 1
             reboot
             exit 0
             ;;
         [Ee])
-            echo -e "\n${GREEN}Exiting. Remember to reboot later for all changes to take effect.${NC}"
+            echo -e "\n${YELLOW}Remember to reboot later for changes to take effect.${NC}"
+            echo -e "You can manually start services with:"
+            [ -f "/etc/init.d/xray" ] && echo -e "  /etc/init.d/xray start"
+            [ -f "/etc/init.d/sing-box" ] && echo -e "  /etc/init.d/sing-box start"
+            [ -f "/etc/init.d/hysteria" ] && echo -e "  /etc/init.d/hysteria start"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}Invalid choice! Please press R to reboot or E to exit: ${NC}"
+            echo -e "\n${RED}Invalid choice! Press R to reboot or E to exit: ${NC}"
             ;;
     esac
 done
