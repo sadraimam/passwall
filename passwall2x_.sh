@@ -33,9 +33,6 @@ else
     echo -e "${GREEN} Updating Packages ... ${NC}"
 fi
 
-### Update Packages ###
-opkg update
-
 ### Add Src ###
 wget -O passwall.pub https://master.dl.sourceforge.net/project/openwrt-passwall-build/passwall.pub
 opkg-key add passwall.pub
@@ -50,33 +47,19 @@ done
 
 ### Install package ###
 opkg update
-sleep 3
 opkg remove dnsmasq
-sleep 3
 opkg install dnsmasq-full
-sleep 2
 opkg install wget-ssl
-sleep 1
 opkg install unzip
-sleep 2
 opkg install luci-app-passwall2
-sleep 3
 opkg install kmod-nft-socket
-sleep 2
 opkg install kmod-nft-tproxy
-sleep 2
 opkg install ca-bundle
-sleep 1
 opkg install kmod-inet-diag
-sleep 1
 opkg install kernel
-sleep 1
 opkg install kmod-netlink-diag
-sleep 1
 opkg install kmod-tun
-sleep 1
 opkg install ipset
-sleep 1
 
 ### Verify Passwall2 Installation ###
 RESULT5=`ls /etc/init.d/passwall2 2>/dev/null`
@@ -98,16 +81,12 @@ fi
 
 ### Install Xray-core ###
 opkg install xray-core
-sleep 2
 RESULT=`ls /usr/bin/xray 2>/dev/null`
 if [ "$RESULT" == "/usr/bin/xray" ]; then
     echo -e "${GREEN} XRAY : OK ! ${NC}"
 else
     echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
     sleep 2
-    echo -e "${YELLOW} Trying to install Xray on temp Space ... ${NC}"
-    sleep 2
-    rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
 fi
 
 ### Install Sing-box ###
@@ -119,28 +98,6 @@ if [ "$RESULT_SINGBOX" == "/usr/bin/sing-box" ]; then
 else
     echo -e "${YELLOW} SING-BOX : NOT INSTALLED X ${NC}"
     sleep 2
-    echo -e "${YELLOW} Trying to install Sing-box from GitHub ... ${NC}"
-    sleep 2
-    # Determine architecture
-    case $(uname -m) in
-        x86_64) ARCH="amd64" ;;
-        aarch64) ARCH="arm64" ;;
-        armv7l) ARCH="armv7" ;;
-        *) ARCH="amd64" ;;
-    esac
-    
-    wget -O sing-box.tar.gz "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-linux-$ARCH.tar.gz"
-    tar -xzf sing-box.tar.gz
-    cp sing-box-*/sing-box /usr/bin/
-    chmod +x /usr/bin/sing-box
-    rm -rf sing-box*
-    
-    # Verify installation
-    if [ -f "/usr/bin/sing-box" ]; then
-        echo -e "${GREEN} SING-BOX installed successfully! ${NC}"
-    else
-        echo -e "${RED} Failed to install SING-BOX! ${NC}"
-    fi
 fi
 
 ### Install Hysteria ###
