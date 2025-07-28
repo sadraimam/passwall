@@ -53,15 +53,21 @@ install_tmp kmod-nft-socket
 install_tmp kmod-nft-tproxy
 install_tmp ca-bundle
 install_tmp kmod-inet-diag
-install_tmp kernel
 install_tmp kmod-netlink-diag
 install_tmp kmod-tun
 install_tmp ipset
 install_tmp sing-box
 install_tmp hysteria
 
-RESULT=`ls /usr/bin/passwall2`
-if [ "$RESULT" == "/usr/bin/passwall2" ]; then
+RESULT5=`ls /usr/lib/opkg/info/dnsmasq-full.control`
+if [ "$RESULT5" == "/usr/lib/opkg/info/dnsmasq-full.control" ]; then
+echo -e "${GREEN} dnsmasq-full : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} dnsmasq-full : NOT INSTALLED X ${NC}"
+fi
+
+RESULT5=`ls /etc/init.d/passwall2`
+if [ "$RESULT5" == "/etc/init.d/passwall2" ]; then
 echo -e "${GREEN} Passwall2 : OK ! ${NC}"
  else
  echo -e "${YELLOW} Passwall2 : NOT INSTALLED X ${NC}"
