@@ -61,11 +61,11 @@ install_tmp sing-box
 install_tmp hysteria
 install_tmp xray-core
 
-RESULT=`ls /usr/bin/xray`
-if [ "$RESULT" == "/usr/bin/xray" ]; then
-echo -e "${GREEN} XRAY : OK ! ${NC}"
+RESULT=`ls /usr/bin/passwall2`
+if [ "$RESULT" == "/usr/bin/passwall2" ]; then
+echo -e "${GREEN} Passwall2 : OK ! ${NC}"
  else
- echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
+ echo -e "${YELLOW} Passwall2 : NOT INSTALLED X ${NC}"
 fi
 
 RESULT=`ls /usr/bin/xray`
