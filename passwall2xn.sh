@@ -17,8 +17,13 @@ uci commit system
 uci commit network
 /sbin/reload_config
 
+# ====== Clean Up ======
+echo -e "${YELLOW}Freeing up disk space...${NC}"
+rm -rf /tmp/opkg-lists/*
+rm -rf /tmp/luci-uploads/*
+rm -rf /tmp/*.ipk
+
 # ====== Update Feeds ======
-opkg clean
 opkg update
 
 wget -O passwall.pub https://master.dl.sourceforge.net/project/openwrt-passwall-build/passwall.pub
@@ -42,18 +47,17 @@ install_if_missing() {
         echo -e "${YELLOW}Installing $pkg...${NC}"
         opkg install "$pkg"
         sleep 1
+        rm -rf /tmp/*.ipk
     else
         echo -e "${GREEN}$pkg already installed.${NC}"
     fi
 }
 
 # ====== Core Install ======
-install_if_missing dnsmasq-full || {
-    echo -e "${RED}Failed to install dnsmasq-full. Exiting...${NC}"
-    exit 1
-}
+opkg remove dnsmasq
+sleep 3
 
-for pkg in wget-ssl unzip sing-box hysteria xray-core luci-app-passwall2 \
+for pkg in wget-ssl unzip sing-box hysteria xray-core dnsmasq-full luci-app-passwall2 \
            kmod-nft-socket kmod-nft-tproxy ca-bundle \
            kmod-inet-diag kmod-netlink-diag kmod-tun ipset; do
     install_if_missing "$pkg"
