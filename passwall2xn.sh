@@ -59,7 +59,6 @@ install_tmp kmod-tun
 install_tmp ipset
 install_tmp sing-box
 install_tmp hysteria
-install_tmp xray-core
 
 RESULT=`ls /usr/bin/passwall2`
 if [ "$RESULT" == "/usr/bin/passwall2" ]; then
