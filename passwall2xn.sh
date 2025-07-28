@@ -79,6 +79,10 @@ opkg install wget-ssl
 sleep 1
 opkg install unzip
 sleep 2
+opkg install sing-box
+sleep 2
+opkg install hysteria
+sleep 2
 opkg install luci-app-passwall2
 sleep 3
 opkg install kmod-nft-socket
@@ -138,47 +142,6 @@ if [ "$RESULT" == "/usr/bin/xray" ]; then
 echo -e "${GREEN} XRAY : OK ! ${NC}"
  else
  echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
- sleep 2
-fi
-
-####clean_up
-echo "Cleaning up opkg cache..."
-rm -rf /tmp/opkg-lists/*
-rm -rf /tmp/*.ipk
-
-echo "Cleaning up temp files..."
-rm -rf /tmp/*
-
-echo "Clearing log files..."
-rm -rf /var/log/*
-
-echo "Disk usage after cleanup:"
-df -h
-
-
-
-sleep 5
-opkg update
-####install_sing-box
-opkg install sing-box
-sleep 2
-RESULT=`ls /usr/bin/sing-box`
-if [ "$RESULT" == "/usr/bin/sing-box" ]; then
-echo -e "${GREEN} sing-box : OK ! ${NC}"
- else
- echo -e "${YELLOW} sing-box : NOT INSTALLED X ${NC}"
- sleep 2
-fi
-
-sleep 5
-####install_hysteria
-opkg install hysteria
-sleep 2
-RESULT=`ls /usr/bin/hysteria`
-if [ "$RESULT" == "/usr/bin/hysteria" ]; then
-echo -e "${GREEN} hysteria : OK ! ${NC}"
- else
- echo -e "${YELLOW} hysteria : NOT INSTALLED X ${NC}"
  sleep 2
 fi
 
