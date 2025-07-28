@@ -149,9 +149,6 @@ rm -rf /tmp/*.ipk
 echo "Cleaning up temp files..."
 rm -rf /tmp/*
 
-echo "Auto-removing unused packages..."
-opkg remove --autoremove
-
 echo "Clearing log files..."
 rm -rf /var/log/*
 
