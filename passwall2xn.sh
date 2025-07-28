@@ -129,7 +129,7 @@ exit 1
 
 fi
 
-opkg update
+
 ####install_xray
 opkg install xray-core
 sleep 2
@@ -161,6 +161,7 @@ df -h
 
 
 sleep 5
+opkg update
 ####install_sing-box
 opkg install sing-box
 sleep 2
