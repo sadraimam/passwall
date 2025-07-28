@@ -129,30 +129,38 @@ exit 1
 
 fi
 
-
+opkg update
 ####install_xray
 opkg install xray-core
-
 sleep 2
-
 RESULT=`ls /usr/bin/xray`
-
 if [ "$RESULT" == "/usr/bin/xray" ]; then
-
 echo -e "${GREEN} XRAY : OK ! ${NC}"
-
  else
-
  echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
-
  sleep 2
- 
- echo -e "${YELLOW} Trying to install Xray on temp Space ... ${NC}"
+fi
 
+####install_sing-box
+opkg install sing-box
+sleep 2
+RESULT=`ls /usr/bin/sing-box`
+if [ "$RESULT" == "/usr/bin/sing-box" ]; then
+echo -e "${GREEN} sing-box : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} sing-box : NOT INSTALLED X ${NC}"
  sleep 2
-  
-rm -f pw.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/pw.sh && chmod 777 pw.sh && sh pw.sh
+fi
 
+####install_hysteria
+opkg install hysteria
+sleep 2
+RESULT=`ls /usr/bin/hysteria`
+if [ "$RESULT" == "/usr/bin/hysteria" ]; then
+echo -e "${GREEN} hysteria : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} hysteria : NOT INSTALLED X ${NC}"
+ sleep 2
 fi
 
 
