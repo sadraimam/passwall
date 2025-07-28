@@ -2,9 +2,25 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+GRAY='\033[0;37m'
 NC='\033[0m' # No Color
 
+echo "Running as root..."
+sleep 2
 clear
+
+SNNAP=`grep -o SNAPSHOT /etc/openwrt_release | sed -n '1p'`
+
+if [ "$SNNAP" == "SNAPSHOT" ]; then
+    echo -e "${YELLOW} SNAPSHOT Version Detected ! ${NC}"
+    rm -f passwalls.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwalls.sh && chmod 777 passwalls.sh && sh passwalls.sh
+    exit 1
+else           
+    echo -e "${GREEN} Updating Packages ... ${NC}"
+fi
 
 uci set system.@system[0].zonename='Asia/Tehran'
 uci set system.@system[0].timezone='<+0330>-3:30'
@@ -59,6 +75,7 @@ install_tmp ipset
 install_tmp sing-box
 install_tmp hysteria
 
+### Verify Installation ###
 RESULT5=`ls /usr/lib/opkg/info/dnsmasq-full.control`
 if [ "$RESULT5" == "/usr/lib/opkg/info/dnsmasq-full.control" ]; then
 echo -e "${GREEN} dnsmasq-full : OK ! ${NC}"
@@ -100,6 +117,9 @@ wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam
 cd
 
 # Passwall2 Settings
+uci set system.@system[0].zonename='Asia/Tehran'
+uci set system.@system[0].timezone='<+0330>-3:30'
+
 uci set passwall2.@global_forwarding[0]=global_forwarding
 uci set passwall2.@global_forwarding[0].tcp_no_redir_ports='disable'
 uci set passwall2.@global_forwarding[0].udp_no_redir_ports='disable'
@@ -110,11 +130,42 @@ uci set passwall2.@global[0].remote_dns='8.8.4.4'
 uci set passwall2.Direct=shunt_rules
 uci set passwall2.Direct.network='tcp,udp'
 uci set passwall2.Direct.remarks='IRAN'
-uci set passwall2.Direct.ip_list='<... full IP list remains unchanged ...>'
-uci set passwall2.Direct.domain_list='regexp:^.+\.ir$ geosite:category-ir'
+uci set passwall2.Direct.ip_list='0.0.0.0/8
+10.0.0.0/8
+100.64.0.0/10
+127.0.0.0/8
+169.254.0.0/16
+172.16.0.0/12
+192.0.0.0/24
+192.0.2.0/24
+192.88.99.0/24
+192.168.0.0/16
+198.19.0.0/16
+198.51.100.0/24
+203.0.113.0/24
+224.0.0.0/4
+240.0.0.0/4
+255.255.255.255/32
+::/128
+::1/128
+::ffff:0:0:0/96
+64:ff9b::/96
+100::/64
+2001::/32
+2001:20::/28
+2001:db8::/32
+2002::/16
+fc00::/7
+fe80::/10
+ff00::/8
+geoip:ir'
+uci set passwall2.Direct.domain_list='regexp:^.+\.ir$
+geosite:category-ir'
+
 uci set passwall2.myshunt.Direct='_direct'
 
 uci commit passwall2
+uci commit system
 
 # DNS Rebind Fix
 uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir my.irancell.ir'
