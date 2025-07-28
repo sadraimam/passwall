@@ -6,15 +6,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# ====== Free Space Info ======
-echo -e "${YELLOW}Checking Available Storage...${NC}"
-df -h | grep overlay
-
-# ====== Start ======
-echo -e "${GREEN}Running as root...${NC}"
-sleep 2
-clear
-
 # ====== System Settings ======
 uci set system.@system[0].zonename='Asia/Tehran'
 uci set system.@system[0].timezone='<+0330>-3:30'
@@ -25,16 +16,6 @@ uci set network.wan6.dns='2001:4860:4860::8888'
 uci commit system
 uci commit network
 /sbin/reload_config
-
-# ====== Detect SNAPSHOT ======
-if grep -q "SNAPSHOT" /etc/openwrt_release; then
-    echo -e "${YELLOW}SNAPSHOT Version Detected. Switching to passwalls.sh...${NC}"
-    rm -f passwalls.sh
-    wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwalls.sh && chmod +x passwalls.sh && sh passwalls.sh
-    exit 1
-else
-    echo -e "${GREEN}Stable Version Detected. Proceeding...${NC}"
-fi
 
 # ====== Update Feeds ======
 opkg clean
@@ -72,9 +53,9 @@ install_if_missing dnsmasq-full || {
     exit 1
 }
 
-for pkg in wget-ssl unzip sing-box hysteria luci-app-passwall2 \
+for pkg in wget-ssl unzip sing-box hysteria xray-core luci-app-passwall2 \
            kmod-nft-socket kmod-nft-tproxy ca-bundle \
-           kmod-inet-diag kmod-netlink-diag kmod-tun ipset xray-core; do
+           kmod-inet-diag kmod-netlink-diag kmod-tun ipset; do
     install_if_missing "$pkg"
 done
 
