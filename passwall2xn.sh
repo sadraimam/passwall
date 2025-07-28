@@ -1,169 +1,122 @@
 #!/bin/bash
+
+# ====== Colors ======
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
-GRAY='\033[0;37m'
 NC='\033[0m' # No Color
 
-echo "Running as root..."
+# ====== Logging ======
+exec > /tmp/passwall_install.log 2>&1
+
+# ====== Free Space Info ======
+echo -e "${YELLOW}Checking Available Storage...${NC}"
+df -h | grep overlay
+
+# ====== Start ======
+echo -e "${GREEN}Running as root...${NC}"
 sleep 2
 clear
 
+# ====== System Settings ======
 uci set system.@system[0].zonename='Asia/Tehran'
-
-uci set network.wan.peerdns="0"
-
-uci set network.wan6.peerdns="0"
-
-uci set network.wan.dns='1.1.1.1'
-
-uci set network.wan6.dns='2001:4860:4860::8888'
-
 uci set system.@system[0].timezone='<+0330>-3:30'
-
+uci set network.wan.peerdns="0"
+uci set network.wan6.peerdns="0"
+uci set network.wan.dns='1.1.1.1'
+uci set network.wan6.dns='2001:4860:4860::8888'
 uci commit system
-
 uci commit network
-
-uci commit
-
 /sbin/reload_config
 
-SNNAP=`grep -o SNAPSHOT /etc/openwrt_release | sed -n '1p'`
-
-if [ "$SNNAP" == "SNAPSHOT" ]; then
-
-echo -e "${YELLOW} SNAPSHOT Version Detected ! ${NC}"
-
-rm -f passwalls.sh && wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwalls.sh && chmod 777 passwalls.sh && sh passwalls.sh
-
-exit 1
-
- else
-           
-echo -e "${GREEN} Updating Packages ... ${NC}"
-
+# ====== Detect SNAPSHOT ======
+if grep -q "SNAPSHOT" /etc/openwrt_release; then
+    echo -e "${YELLOW}SNAPSHOT Version Detected. Switching to passwalls.sh...${NC}"
+    rm -f passwalls.sh
+    wget https://raw.githubusercontent.com/sadraimam/passwall/main/passwalls.sh && chmod +x passwalls.sh && sh passwalls.sh
+    exit 1
+else
+    echo -e "${GREEN}Stable Version Detected. Proceeding...${NC}"
 fi
 
-### Update Packages ###
-
+# ====== Update Feeds ======
+opkg clean
 opkg update
 
-### Add Src ###
-
 wget -O passwall.pub https://master.dl.sourceforge.net/project/openwrt-passwall-build/passwall.pub
-
 opkg-key add passwall.pub
-
 >/etc/opkg/customfeeds.conf
 
 read release arch << EOF
 $(. /etc/openwrt_release ; echo ${DISTRIB_RELEASE%.*} $DISTRIB_ARCH)
 EOF
+
 for feed in passwall_luci passwall_packages passwall2; do
-  echo "src/gz $feed https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-$release/$arch/$feed" >> /etc/opkg/customfeeds.conf
+    echo "src/gz $feed https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-$release/$arch/$feed" >> /etc/opkg/customfeeds.conf
 done
 
-### Install package ###
-
 opkg update
-sleep 3
-opkg remove dnsmasq
-sleep 3
-opkg install dnsmasq-full
-sleep 2
-opkg install wget-ssl
-sleep 1
-opkg install unzip
-sleep 2
-opkg install sing-box
-sleep 2
-opkg install hysteria
-sleep 2
-opkg install luci-app-passwall2
-sleep 3
-opkg install kmod-nft-socket
-sleep 2
-opkg install kmod-nft-tproxy
-sleep 2
-opkg install ca-bundle
-sleep 1
-opkg install kmod-inet-diag
-sleep 1
-opkg install kernel
-sleep 1
-opkg install kmod-netlink-diag
-sleep 1
-opkg install kmod-tun
-sleep 1
-opkg install ipset
 
-sleep 1
+# ====== Install Helper ======
+install_if_missing() {
+    pkg="$1"
+    if ! opkg list-installed | grep -q "^$pkg "; then
+        echo -e "${YELLOW}Installing $pkg...${NC}"
+        opkg install "$pkg"
+        sleep 1
+    else
+        echo -e "${GREEN}$pkg already installed.${NC}"
+    fi
+}
 
+# ====== Core Install ======
+install_if_missing dnsmasq-full || {
+    echo -e "${RED}Failed to install dnsmasq-full. Exiting...${NC}"
+    exit 1
+}
 
-RESULT5=`ls /etc/init.d/passwall2`
+for pkg in wget-ssl unzip sing-box hysteria luci-app-passwall2 \
+           kmod-nft-socket kmod-nft-tproxy ca-bundle \
+           kmod-inet-diag kmod-netlink-diag kmod-tun ipset xray-core; do
+    install_if_missing "$pkg"
+done
 
-if [ "$RESULT5" == "/etc/init.d/passwall2" ]; then
+# ====== Verify Critical Components ======
+echo -e "${YELLOW}Verifying Installed Packages...${NC}"
 
-echo -e "${GREEN} Passwall.2 Installed Successfully ! ${NC}"
+check_installed() {
+    pkg="$1"
+    path="$2"
+    if [ -e "$path" ]; then
+        echo -e "${GREEN}$pkg installed successfully ✔${NC}"
+    else
+        echo -e "${RED}$pkg NOT installed ✘${NC}"
+        INSTALL_FAIL=1
+    fi
+}
 
- else
+INSTALL_FAIL=0
 
- echo -e "${RED} Can not Download Packages ... Check your internet Connection . ${NC}"
+check_installed "dnsmasq-full" "/usr/lib/opkg/info/dnsmasq-full.control"
+check_installed "luci-app-passwall2" "/etc/init.d/passwall2"
+check_installed "sing-box" "/usr/bin/sing-box"
+check_installed "hysteria" "/usr/bin/hysteria"
+check_installed "xray-core" "/usr/bin/xray"
 
- exit 1
-
+if [ "$INSTALL_FAIL" -eq 1 ]; then
+    echo -e "${RED}Some critical components failed to install. Please check your internet connection or available storage.${NC}"
+    exit 1
+else
+    echo -e "${GREEN}All critical components installed successfully!${NC}"
 fi
 
-
-DNS=`ls /usr/lib/opkg/info/dnsmasq-full.control`
-
-if [ "$DNS" == "/usr/lib/opkg/info/dnsmasq-full.control" ]; then
-
-echo -e "${GREEN} dnsmaq-full Installed successfully ! ${NC}"
-
- else
-           
-echo -e "${RED} Package : dnsmasq-full not installed ! (Bad internet connection .) ${NC}"
-
-exit 1
-
-fi
-
-
-####install_xray
-opkg install xray-core
-sleep 2
-RESULT=`ls /usr/bin/xray`
-if [ "$RESULT" == "/usr/bin/xray" ]; then
-echo -e "${GREEN} XRAY : OK ! ${NC}"
- else
- echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
- sleep 2
-fi
-
-
-####improve
-
+# ====== Patch Files ======
 cd /tmp
-
 wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip
-
 unzip -o iam.zip -d /
-
 cd
 
-########
-
-
-uci set system.@system[0].zonename='Asia/Tehran'
-
-uci set system.@system[0].timezone='<+0330>-3:30'
-
-
+# ====== Passwall2 Configuration ======
 uci set passwall2.@global_forwarding[0]=global_forwarding
 uci set passwall2.@global_forwarding[0].tcp_no_redir_ports='disable'
 uci set passwall2.@global_forwarding[0].udp_no_redir_ports='disable'
@@ -205,22 +158,17 @@ ff00::/8
 geoip:ir'
 uci set passwall2.Direct.domain_list='regexp:^.+\.ir$
 geosite:category-ir'
-
 uci set passwall2.myshunt.Direct='_direct'
 
-uci commit passwall2
+uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir my.irancell.ir'
 
 uci commit system
-
-uci set dhcp.@dnsmasq[0].rebind_domain='www.ebanksepah.ir 
-my.irancell.ir'
-
-uci commit
-
-echo -e "${YELLOW}** Installation Completed ** ${ENDCOLOR}"
-
-rm passwall2x.sh
-
-rm passwallx.sh
-
+uci commit network
+uci commit passwall2
+uci commit dhcp
 /sbin/reload_config
+
+# ====== Cleanup ======
+rm -f passwall2x.sh passwallx.sh iam.zip passwall.pub
+
+echo -e "${GREEN}** Passwall2 Installation Completed Successfully **${NC}"
