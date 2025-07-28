@@ -141,6 +141,49 @@ echo -e "${GREEN} XRAY : OK ! ${NC}"
  sleep 2
 fi
 
+####clean_up
+echo "Cleaning up opkg cache..."
+rm -rf /tmp/opkg-lists/*
+rm -rf /tmp/*.ipk
+
+echo "Cleaning up temp files..."
+rm -rf /tmp/*
+
+echo "Auto-removing unused packages..."
+opkg remove --autoremove
+
+echo "Clearing log files..."
+rm -rf /var/log/*
+
+echo "Disk usage after cleanup:"
+df -h
+
+
+
+sleep 5
+####install_sing-box
+opkg install sing-box
+sleep 2
+RESULT=`ls /usr/bin/sing-box`
+if [ "$RESULT" == "/usr/bin/sing-box" ]; then
+echo -e "${GREEN} sing-box : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} sing-box : NOT INSTALLED X ${NC}"
+ sleep 2
+fi
+
+sleep 5
+####install_hysteria
+opkg install hysteria
+sleep 2
+RESULT=`ls /usr/bin/hysteria`
+if [ "$RESULT" == "/usr/bin/hysteria" ]; then
+echo -e "${GREEN} hysteria : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} hysteria : NOT INSTALLED X ${NC}"
+ sleep 2
+fi
+
 
 ####improve
 
@@ -220,29 +263,3 @@ rm passwall2x.sh
 rm passwallx.sh
 
 /sbin/reload_config
-
-make clean
-sleep 5
-####install_sing-box
-opkg install sing-box
-sleep 2
-RESULT=`ls /usr/bin/sing-box`
-if [ "$RESULT" == "/usr/bin/sing-box" ]; then
-echo -e "${GREEN} sing-box : OK ! ${NC}"
- else
- echo -e "${YELLOW} sing-box : NOT INSTALLED X ${NC}"
- sleep 2
-fi
-
-make clean
-sleep 5
-####install_hysteria
-opkg install hysteria
-sleep 2
-RESULT=`ls /usr/bin/hysteria`
-if [ "$RESULT" == "/usr/bin/hysteria" ]; then
-echo -e "${GREEN} hysteria : OK ! ${NC}"
- else
- echo -e "${YELLOW} hysteria : NOT INSTALLED X ${NC}"
- sleep 2
-fi
