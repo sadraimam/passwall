@@ -17,12 +17,6 @@ uci commit system
 uci commit network
 /sbin/reload_config
 
-# ====== Clean Up ======
-echo -e "${YELLOW}Freeing up disk space...${NC}"
-rm -rf /tmp/opkg-lists/*
-rm -rf /tmp/luci-uploads/*
-rm -rf /tmp/*.ipk
-
 # ====== Update Feeds ======
 opkg update
 
@@ -47,6 +41,8 @@ install_if_missing() {
         echo -e "${YELLOW}Installing $pkg...${NC}"
         opkg install "$pkg"
         sleep 1
+        rm -rf /tmp/opkg-lists/*
+        rm -rf /tmp/luci-uploads/*
         rm -rf /tmp/*.ipk
     else
         echo -e "${GREEN}$pkg already installed.${NC}"
@@ -57,9 +53,9 @@ install_if_missing() {
 opkg remove dnsmasq
 sleep 3
 
-for pkg in wget-ssl unzip sing-box hysteria xray-core dnsmasq-full luci-app-passwall2 \
+for pkg in dnsmasq-full wget-ssl unzip luci-app-passwall2 \
            kmod-nft-socket kmod-nft-tproxy ca-bundle \
-           kmod-inet-diag kmod-netlink-diag kmod-tun ipset; do
+           kmod-inet-diag kmod-netlink-diag kmod-tun ipset sing-box hysteria xray-core; do
     install_if_missing "$pkg"
 done
 
@@ -73,24 +69,14 @@ check_installed() {
         echo -e "${GREEN}$pkg installed successfully ✔${NC}"
     else
         echo -e "${RED}$pkg NOT installed ✘${NC}"
-        INSTALL_FAIL=1
     fi
 }
-
-INSTALL_FAIL=0
 
 check_installed "dnsmasq-full" "/usr/lib/opkg/info/dnsmasq-full.control"
 check_installed "luci-app-passwall2" "/etc/init.d/passwall2"
 check_installed "sing-box" "/usr/bin/sing-box"
 check_installed "hysteria" "/usr/bin/hysteria"
 check_installed "xray-core" "/usr/bin/xray"
-
-if [ "$INSTALL_FAIL" -eq 1 ]; then
-    echo -e "${RED}Some critical components failed to install. Please check your internet connection or available storage.${NC}"
-    exit 1
-else
-    echo -e "${GREEN}All critical components installed successfully!${NC}"
-fi
 
 # ====== Patch Files ======
 cd /tmp
