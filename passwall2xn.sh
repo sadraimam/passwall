@@ -234,6 +234,8 @@ echo -e "${GREEN} sing-box : OK ! ${NC}"
  sleep 2
 fi
 
+make clean
+sleep 5
 ####install_hysteria
 opkg install hysteria
 sleep 2
