@@ -61,6 +61,34 @@ install_tmp sing-box
 install_tmp hysteria
 install_tmp xray-core
 
+RESULT=`ls /usr/bin/xray`
+if [ "$RESULT" == "/usr/bin/xray" ]; then
+echo -e "${GREEN} XRAY : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
+fi
+
+RESULT=`ls /usr/bin/xray`
+if [ "$RESULT" == "/usr/bin/xray" ]; then
+echo -e "${GREEN} XRAY : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} XRAY : NOT INSTALLED X ${NC}"
+fi
+
+RESULT=`ls /usr/bin/sing-box`
+if [ "$RESULT" == "/usr/bin/sing-box" ]; then
+echo -e "${GREEN} Sing-box : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} Sing-box : NOT INSTALLED X ${NC}"
+fi
+
+RESULT=`ls /usr/bin/hysteria`
+if [ "$RESULT" == "/usr/bin/hysteria" ]; then
+echo -e "${GREEN} Hysteria : OK ! ${NC}"
+ else
+ echo -e "${YELLOW} Hysteria : NOT INSTALLED X ${NC}"
+fi
+
 # Optional Patch
 cd /tmp
 wget -q https://raw.githubusercontent.com/sadraimam/passwall/refs/heads/main/iam.zip && unzip -o iam.zip -d /
