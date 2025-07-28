@@ -6,9 +6,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# ====== Logging ======
-exec > /tmp/passwall_install.log 2>&1
-
 # ====== Free Space Info ======
 echo -e "${YELLOW}Checking Available Storage...${NC}"
 df -h | grep overlay
