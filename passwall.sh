@@ -49,9 +49,7 @@ echo -e "${GREEN} Updating Packages ... ${NC}"
 
 fi
 
-### Update Packages ###
 
-opkg update
 
 ### Add Src ###
 
@@ -103,9 +101,9 @@ sleep 2
 opkg install kmod-nft-tproxy
 sleep 2
 
->/etc/banner
 
-sleep 1
+
+
 
 
 ####improve
